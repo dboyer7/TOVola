@@ -1,9 +1,0 @@
-TEST Simple_test
-{ 
-  RELTOL 1e-10
-}
-
-TEST Piecewise_test
-{ 
-  RELTOL 1e-10
-}
