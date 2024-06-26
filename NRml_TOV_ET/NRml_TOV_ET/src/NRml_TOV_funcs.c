@@ -3,7 +3,7 @@
 
 //This file actually holds the ODE evolution code. Ripped directly from OdieGM with no changes made.
 //For use in NRml_TOV.
-//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the NRml_TOV_Driver_main.c file.
+//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the NRml_TOV_Driver.c file.
 //For more info, see OdieGM and the GSL ODE solver.
 
 

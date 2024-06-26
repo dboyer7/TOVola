@@ -1,6 +1,6 @@
 implements: NRml_TOV_ET
-inherits: ADMBase, HydroBase, GRHayLib
+inherits: GRHayLib, ADMBase, HydroBase, Grid
 
 public:
 
-# nothing for now, at the moment no other thorn needs to see this one. 
+# nothing for now, at the moment no other thorn needs to see this one.

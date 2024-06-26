@@ -1,4 +1,19 @@
-SCHEDULE NRml_TOV_Driver_main AT CCTK_INITIAL
+SCHEDULE NRml_TOV_Driver AT CCTK_BASEGRID
 {
 	LANG: C
-} "Performs the TOV initial data solution algorithm."
+} "Performs the TOV initial data solution algorithm. Writes Raw Data to file."
+
+SCHEDULE GROUP NRml_TOV_Grid IN HydroBase_Initial
+{
+  SYNC:ADMBase::metric,ADMBase::curv,ADMBase::lapse,ADMBase::shift
+  SYNC: rho
+  SYNC: press
+  SYNC: eps
+  SYNC: vel
+  SYNC: w_lorentz
+} "Group for the TOV initial data"
+
+SCHEDULE NRml_interp_to_grid IN NRml_TOV_Grid
+{
+	LANG:C
+} "Adjusts raw TOV data and interpolates results to CCTK grid"

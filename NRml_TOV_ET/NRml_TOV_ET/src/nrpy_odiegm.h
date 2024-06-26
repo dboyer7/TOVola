@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 //UPDATE: OdieGM's Header file. Defines butcher tables. Ripped from OdieGM with no changes.
-//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the TOV_Driver_main.c file.
+//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the NRml_TOV_Driver.c file.
 
 
 

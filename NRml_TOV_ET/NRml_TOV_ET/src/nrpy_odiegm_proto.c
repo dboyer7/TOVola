@@ -2,7 +2,7 @@
 #include "nrpy_odiegm.h"
     
 //UPDATE: This is the file the prototypes the functions used within Odie. Ripped from OdieGM with no changes.
-//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the TOV_Driver_main.c file.
+//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the NRml_TOV_Driver.c file.
 
 
 

@@ -2,7 +2,13 @@
 #include "NRml_TOV_user_methods.c" //Edited specifically for the TOV solver.
 #include "GRHayLib.h" //Access to GRHayL library in the ET
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
+#include <cctk.h>
+#include <cctk_Arguments.h>
+#include <cctk_Parameters.h>
 /********************************
 // UPDATE: NRml_TOV is a special version of the Odie main driver. It is built to handle the TOV equations specifically, and is built to handle a variety of different types of EOS
 //
@@ -25,7 +31,7 @@
 //
 // David Boyer (ET date completed)
 ********************************/
-int main(CCTK_ARGUMENTS){
+void NRml_TOV_Driver(CCTK_ARGUMENTS){
 
     //Einstein Toolkit main function
 
@@ -35,17 +41,17 @@ int main(CCTK_ARGUMENTS){
 
     //Choose your EOS type and (if necessary) path
     //ghl_eos_parameters ghl_eos={};
-    char type;
-    if (strcmp("Simple",NRml_EOS_type) == 0) {
-      type = 's';}
-    else if (strcmp("Piecewise",NRml_EOS_type) == 0) {
-      type = 'p';}
-    else if (strcmp("Tabulated",NRml_EOS_type) == 0) {
-      type = 't';}
-    else{
-      printf("ERROR: Invalid EOS type. Must be either Simple, Piecewise, or Tabulated.\n");
-      printf("Shutting down due to error...\n");
-      return 1;}
+    //char type;
+    //if (strcmp("Simple",NRml_EOS_type) == 0) {
+    //  type = 's';}
+    //else if (strcmp("Piecewise",NRml_EOS_type) == 0) {
+    //  type = 'p';}
+    //else if (strcmp("Tabulated",NRml_EOS_type) == 0) {
+    //  type = 't';}
+    //else{
+    //  printf("ERROR: Invalid EOS type. Must be either Simple, Piecewise, or Tabulated.\n");
+    //  printf("Shutting down due to error...\n");
+    //  exit(1);}
     //char type = 't'; //s=simple, p=piecewise, t=tabulated
     //char* table_path = "/home/boye4060/projects/NRml_TOV/NRml_TOV/EOS_Tables/SLy4_3335_rho391_temp163_ye66_adjusted.h5"; //Replace with your own path to your table.
 
@@ -83,7 +89,7 @@ int main(CCTK_ARGUMENTS){
     //double TAtm = 1.0e-2;
     //double TMin = -1.0;
     //double TMax = 1.0e10;
-    double T_in = NRml_Tin;
+    //double T_in = NRml_Tin;
 
     //These values are for initializing all types of EOS.
     double rhoCentral = NRml_central_baryon_density;
@@ -106,14 +112,14 @@ int main(CCTK_ARGUMENTS){
     const nrpy_odiegm_step_type * step_type;
     //step_type = nrpy_odiegm_step_ARKF;
 
-    if (strcmp("ARKF",TOVOdieGM_step_type) == 0) {
+    if (strcmp("ARKF",NRml_ODE_method) == 0) {
        step_type = nrpy_odiegm_step_ARKF;}
-    else if (strcmp("ADP8",TOVOdieGM_step_type) == 0) {
+    else if (strcmp("ADP8",NRml_ODE_method) == 0) {
        step_type = nrpy_odiegm_step_ADP8;}
     else{
       printf("Invalid Step type. May only use ARKF or ADP8.\n");
       printf("Shutting down due to error.\n");
-      return 1;}
+      exit(1);}
 
     //additional tolerance values you can edit.
     //Only mess with these if you know what you are doing.
@@ -130,26 +136,31 @@ int main(CCTK_ARGUMENTS){
     double error_lower_tolerance = NRml_error_lower_tolerance;
 
     //Initializing the EOS
-    if(type=='s'){
+    if(strcmp("Simple",NRml_EOS_type) == 0){
       printf("Simple Polytrope\n");
-      if(neos!=1){
+      if(ghl_eos->neos!=1){
         printf("Error: Too many regions for the simple polytrope.\n");
         printf("Check your value for neos, or use a piecewise polytrope (type = 'p')\n");
         printf("Shutting down due to error...\n");
-        return 1;}
+        exit(1);}
+        //type='s';}
+        }
       //ghl_initialize_hybrid_eos_functions_and_params(rhoAtm,rhoMin,rhoMax,neos,rhoBound,Gamma,K0,GammaTh,&ghl_eos);}
-    else if(type=='p'){
-      printf("Piecewise Polytrope\n");
+    else if(strcmp("Piecewise",NRml_EOS_type) == 0){
+      printf("Piecewise Polytrope\n");}
+      //type='p';}
       //ghl_initialize_hybrid_eos_functions_and_params(rhoAtm,rhoMin,rhoMax,neos,rhoBound,Gamma,K0,GammaTh,&ghl_eos);}
-    else if(type=='t'){
+    else if(strcmp("Tabulated",NRml_EOS_type) == 0){
       printf("Tabulated EOS\n");
       //ghl_initialize_tabulated_eos_functions_and_params(table_path,rhoAtm,rhoMin,rhoMax,YeAtm,YeMin,YeMax,TAtm,TMin,TMax,&ghl_eos);
-      ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(T_in, ghl_eos);
+      ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(NRml_Tin, ghl_eos);
+      printf("hit\n");
+      //type='t';
     }
     else{
-      printf("ERROR: Invalid EOS type. Must be either 's' (simple), 'p' (piecewise), or 't' (tabulated)\n");
+      printf("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'\n");
       printf("Shutting down due to error...\n");
-      return 1;}
+      exit(1);}
 
 
     const nrpy_odiegm_step_type * step_type_2;
@@ -159,7 +170,7 @@ int main(CCTK_ARGUMENTS){
     if(step_type != step_type_2){
     	printf("ERROR: Hybridizing method disabled for the TOV solver.\n");
 	printf("Shutting down due to error.\n");
-    	return 1;}
+    	exit(1);}
 
     if(adaptive_step==true){
       if(step_type != nrpy_odiegm_step_AHE
@@ -170,7 +181,7 @@ int main(CCTK_ARGUMENTS){
 	 && step_type != nrpy_odiegm_step_ADP8){
 	printf("ERROR: Incompatible step type with adaptive method.\n");
 	printf("Shutting down due to error.\n");
-	return 1;}
+	exit(1);}
     }
 
     if(adaptive_step==false){
@@ -182,7 +193,7 @@ int main(CCTK_ARGUMENTS){
          || step_type == nrpy_odiegm_step_ADP8){
         printf("ERROR: Incompatible step type with non-adaptive method.\n");
         printf("Shutting down due to error.\n");
-        return 1;}
+        exit(1);}
     }
 
     //GSL requires the use of the variable 'no_adaptive step'
@@ -207,7 +218,7 @@ int main(CCTK_ARGUMENTS){
     };
     //cp.Gamma = Gamma;
     //cp.rhoBound = rhoBound;
-    cp.type = type;
+    //cp.type = type;
     cp.rhoCentral = rhoCentral;
     //cp.ghl_eos = ghl_eos;
     
@@ -345,7 +356,27 @@ int main(CCTK_ARGUMENTS){
     //free(rhoBound);
     //NRPyEOS_free_memory(&ghl_eos);
     printf("ODE Solver \"Odie\" for NRml_TOV_ET Shutting Down...\n");
-    return 0;
+    return;
     
 } // -GM, master of dogs (OdieGM code)
   // -David Boyer, Edited for NRml_TOV_ET
+
+
+//These extra functions are for use in the toolkit
+//The raw TOV data is converted into ADM and Hydrobase and placed on a grid.
+
+void NRml_interp_to_grid(CCTK_ARGUMENTS){
+
+  DECLARE_CCTK_ARGUMENTS
+  DECLARE_CCTK_PARAMETERS
+  
+  char filename[100];
+  sprintf(filename,NRml_filename);
+  
+  FILE *raw_TOV = fopen(filename, "r");
+  if (raw_TOV == NULL) {
+    fprintf(stderr,"ERROR: could not open file %s\n",filename);
+    exit(1);
+  }
+
+}
