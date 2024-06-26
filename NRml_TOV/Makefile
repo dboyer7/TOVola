@@ -1,8 +1,8 @@
 CC = gcc -g
 CFLAGS = -O2 -march=native -fopenmp -Wall -Wno-unused-variable -std=gnu99
-LDFLAGS = -L/usr/lib/x86_64-linux-gnu/hdf5/serial -L/home/boye4060/projects/New_Odie_TOV/GRHayL/build/lib -lhdf5 -lgrhayl
+LDFLAGS = -L/usr/lib/x86_64-linux-gnu/hdf5/serial -L/home/boye4060/projects/NRml_TOV/GRHayL/build/lib -lhdf5 -lgrhayl
 
-INCLUDEDIRS= -I/usr/include/hdf5/serial -I/home/boye4060/projects/New_Odie_TOV/GRHayL/build/include
+INCLUDEDIRS= -I/usr/include/hdf5/serial -I/home/boye4060/projects/NRml_TOV/GRHayL/build/include
 all: NRml_TOV NRml_TOV_Driver_main.o
 NRml_TOV_Driver_main.o: NRml_TOV_Driver_main.c
 	$(CC) $(CFLAGS) $(INCLUDEDIRS) -c NRml_TOV_Driver_main.c -o NRml_TOV_Driver_main.o $(LDFLAGS)

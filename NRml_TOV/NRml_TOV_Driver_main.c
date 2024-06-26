@@ -36,7 +36,7 @@ int main(){
     //Choose your EOS type and (if necessary) path
     ghl_eos_parameters ghl_eos={};
     char type = 't'; //s=simple, p=piecewise, t=tabulated
-    char* table_path = "/home/boye4060/projects/New_Odie_TOV/NRml_TOV/EOS_Tables/SLy4_3335_rho391_temp163_ye66_adjusted.h5"; //Replace with your own path to your table.
+    char* table_path = "/home/boye4060/projects/NRml_TOV/NRml_TOV/EOS_Tables/SLy4_3335_rho391_temp163_ye66_adjusted.h5"; //Replace with your own path to your table.
 
     //These values are for initializing the Simple and Piecewise Polytrope
     int neos = 7;
