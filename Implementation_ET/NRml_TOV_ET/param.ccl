@@ -1,0 +1,160 @@
+#Parameters for NRml_TOV_ET
+
+#################################################################################################################
+#Extends
+#################################################################################################################
+shares:HydroBase
+
+EXTENDS KEYWORD initial_hydro
+{
+  "NRml" :: "TOV star initial hydrobase variables"
+}
+
+shares:admbase
+
+EXTENDS KEYWORD initial_data
+{
+  "NRml" :: "TOV star initial metric"
+}
+
+EXTENDS KEYWORD initial_lapse
+{
+  "NRml" :: "TOV star initial lapse; isotropic"
+}
+
+EXTENDS KEYWORD initial_shift
+{
+  "NRml" :: "TOV star initial shift"
+}
+#################################################################################################################
+
+
+#################################################################################################################
+#Parameters for NRml_TOV_ET: TOV parameters + miscellaneous
+#################################################################################################################
+USES KEYWORD metric_type
+
+CCTK_INT NRml_Interpolation_Stencil "Stencil Size for Interpollator to Grid"
+{
+	1:* :: "Minimum stencil of 1"
+} 12
+
+CCTK_REAL NRml_outer_radius_limit "Integrate to this point (Schwarzchild) for a sufficient amount of data points"
+{
+	1.0:* :: "Minimum of 1.0"
+} 1.55e1
+
+CCTK_REAL NRml_Tin "Beta Equilibrium Temperature"
+{
+	0.0:* :: "Must be Positive"
+} 1.0e-2
+
+CCTK_REAL NRml_central_baryon_density "What's the initial baryon density? (Used to calculate initial pressure)."
+{
+	0.0:* :: "Must be Positive"
+} 0.129285
+
+STRING NRml_filename "What is the name of the output raw TOV data"
+{
+	".*" :: "Any Filename"
+} "ooData.txt"
+
+STRING NRml_filename_adjusted "What is the name of the output adjusted TOV data"
+{
+  ".*" :: "Any filename."
+} "ooData_adjusted.txt"
+
+STRING NRml_EOS_type "What EOS type are you using?"
+{
+	"Simple" :: "Simple Polytrope"
+	"Piecewise" :: "Piecewise Polytrope"
+	"Tabulated" :: "Tabulated EOS"
+} "Simple"
+#################################################################################################################
+
+
+#################################################################################################################
+#Parameters for NRml_TOV_ET: ODE Method and Parameters
+#################################################################################################################
+CCTK_REAL NRml_step "Initial Step Size"
+{
+	0.0:* :: "Must be Positive"
+} 1.0e-5
+
+CCTK_INT NRml_size "Maximum number of steps"
+{
+	1:* :: "Minimum of 1 step"
+} 100000000
+
+#Only allowing these two methods right now. I can add a few more if there is a demand.
+STRING NRml_ODE_method "What type of method are we using (More Methods can be added if there is demand)"
+{
+	"ARKF" :: "Adaptive Runge-Kutta-Fehlberg (RK4(5))"
+	"ADP8" :: "Adaptive Dormand-Prince Eigth Order (DP7(8))"
+} "ARKF"
+
+CCTK_REAL NRml_error_limit "Limiting factor of the error"
+{
+	0.0:* :: "Must be Positive"
+} 1.0e-8
+
+CCTK_REAL NRml_scale_factor "Error paramater: scales the step adjustment"
+{
+  0.0:* :: "Must be positive"
+} 0.9
+
+CCTK_REAL NRml_error_safety "Error parameter: a safety term to keep chaos at bay."
+{
+  0.0:* :: "Must be positive"
+} 0.266666666666666667
+
+CCTK_REAL NRml_ay_error_scaler "Weight for the function itself in estimating error."
+{
+  0.0:* :: "Must be positive"
+} 1.0
+
+CCTK_REAL NRml_ady_error_scaler "Weight for the derivative of the function in estimating error."
+{
+  0.0:* :: "Must be positive"
+} 1.0
+
+CCTK_REAL NRml_max_step_adjustment "Maximum adjustment in a single step."
+{
+  0.0:* :: "Must be positive"
+} 3.0
+
+CCTK_REAL NRml_min_step_adjustment "Minimum adjustment in a single step."
+{
+  0.0:* :: "Must be positive"
+} 0.1
+
+CCTK_REAL NRml_absolute_max_step "Biggest possible step size."
+{
+  0.0:* :: "Must be positive"
+} 1.0e-1
+
+CCTK_REAL NRml_absolute_min_step "Smallest possible step size"
+{
+  0.0:* :: "Must be positive"
+} 1.0e-8
+
+CCTK_REAL NRml_error_upper_tolerance "Upper threshold of error magnitude to trigger step adjustment."
+{
+  0.0:* :: "Must be positive"
+} 1.0
+
+CCTK_REAL NRml_error_lower_tolerance "Lower threshold of error magnitude to trigger step adjustment."
+{
+  0.0:* :: "Must be positive"
+} 0.5
+#################################################################################################################
+
+
+#################################################################################################################
+#Populate Timelevels
+#################################################################################################################
+CCTK_INT NRml_TOV_Populate_Timelevels "Populate that amount of timelevels (Based on original ET TOVSolver)" STEERABLE=always
+{
+  1:3 :: "1 (default) to 3"
+} 1
+#################################################################################################################

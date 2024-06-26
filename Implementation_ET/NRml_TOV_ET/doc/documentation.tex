@@ -1,0 +1,278 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+
+\usepackage{../../../../doc/latex/cactus}
+
+\begin{document}
+
+% The author of the documentation
+\author{David Boyer \textless dboyer@uidaho.edu \textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{NRml\_TOV\_ET}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{June 24, 2024}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+{\tt NRml\_TOV\_ET} is a thorn for the Einstien Toolkit that solves the Tolman-Oppenheimer-Volkov (TOV) equations of spherically symmetric static stars using an adaptive ODE method (RK45 or DP78), courtesy of the {\tt OdieGM} code.\cite{Odie} This TOV solver is compatible with three types of Equations of State (EOS): Simple Polytrope, Piecewise Polytrope, and Tabulated EOS. Examples of using each EOS is included in the {\tt par} directory. Raw data is solved, adjusted, and set on the ET grid, and constraint tested via the {\tt Baikal} thorn.\cite{Baikal}
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+{\tt NRml\_TOV\_ET} is a thorn developed to handle the TOV equations using multiple different types of EOS and use adaptive methods to solve the system of ODEs. Built off of the ODE solver known as {\tt OdieGM} \cite{Odie}, {\tt NRml} is specifically developed to solve the TOV equations and adjust and interpolate the TOV data to the ET grid.
+
+{\tt NRml} features multiple EOS compatibility, for Simple and Piecewise Polytropes, as well as Tabulated EOS. EOS parameters are stored by the {\tt GRHayL} library \cite{GRHayL}, so make sure you specify for it either polytrope parameters or your specific table path in your parfile.
+
+\section{TOV Equations and Equations of State}
+
+Note that this section will not be a derivation of the equations. If more information is desired, see the original TOV papers \cite{Tolman, OppVol}.
+
+The TOV equations are the equations of hydrostatic equilibrium for relativistic stars that are spherically symmetric and static. They are as follows:
+
+\begin{equation}\label{eqn:TOVdP}
+\frac{dP}{dr} = -(\rho_e+P)\frac{(\frac{2m}{r}+8\pi r^2P)}{2r(1-\frac{2m}{r})}
+\end{equation}
+\begin{equation}\label{eqn:TOVdnu}
+\frac{d\nu}{dr} = \frac{(\frac{2m}{r}+8\pi r^2P)}{r(1-\frac{2m}{r})}
+\end{equation}
+\begin{equation}\label{eqn:TOVdM}
+\frac{dm}{dr} = 4\pi r^2 \rho_e
+\end{equation}
+\begin{equation}\label{eqn:TOVdrbar}
+\frac{d\bar{r}}{dr} = \frac{\bar{r}}{r\sqrt{1-\frac{2m}{r}}}
+\end{equation}
+where we adopt geometerized units (G=c=1). We followed the form used in {\tt nrpytutorial}.\cite{NRpy}
+
+I will note that I will be differentiating between total energy density and baryon matter density as $\rho_e$ and $\rho_b$, respectively. $P$ is the system's pressure, $m$ is mass, $r$ is Schwarzchild radius, $\nu$ is an associated metric function tied to the lapse, and $\bar{r}$ is the isotropic radius.
+
+One must also declare an EOS the relates $P$ and $\rho_b$:
+\begin{equation}\label{eqn:EOS}
+P=P(\rho_b)
+\end{equation}
+{\tt NRml\_TOV\_ET} has compatibility with three different types of EOS: Simple Polytrope (Equation [\ref{eqn:EOS:S}]), Piecewise Polytrope (Equation [\ref{eqn:EOS:P}]), and Tabulated EOS (Equation [\ref{eqn:EOS:T}]):
+
+\begin{equation}\label{eqn:EOS:S}
+P=K\rho_b^{\Gamma}
+\end{equation}
+\begin{equation}\label{eqn:EOS:P}
+P=K_i\rho_b^{\Gamma_i}
+\end{equation}
+\begin{equation}\label{eqn:EOS:T}
+P=P_{table}(\rho_b)
+\end{equation}
+Furthermore, $\rho_e$ and $\rho_b$ are related by Equation [\ref{eqn:rhoRelation}]
+\begin{equation}\label{eqn:rhoRelation}
+\rho_e = \rho_b(1+\epsilon)
+\end{equation}
+where $\epsilon$ is the internal energy density.
+
+\section{Solving the ODE System}
+
+The ODE solver that {\tt NRml} uses is the {\tt OdieGM} ODE solver. It was made for general purpose, and can solve any ODE system it is given, as long as it is broken into a set of 1st-order ODEs. It can handle a variety of ODE methods, as well as adaptive and non-adaptive methods.
+
+{\tt NRml\_TOV\_ET} takes the base code of {\tt OdieGM} and edits it to specifically handle the TOV equations in the Einstein Toolkit. It only enables the adaptive RK4(5) method (ARKF) and the adaptive DP7(8) method (ADP8). If there is demand, I can enable more methods, but these are the ones that I felt were of the most use.
+
+{\tt NRml} starts by calculating the initial pressure of the system from a given central baryon density, $\rho_c$. Then, using the {\tt OdieGM} framework, it steps through the integration, based of the butcher table of your chosen ODE method. The integration will continue until the termination condition is hit. In the case of {\tt NRml\_TOV\_ET}, the termination condition is a user-inputted outer radius limit, so that there is enough data to interpolate to the ET grid.
+
+The raw data of the solution is then written to a file and allocated memory is freed. Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated and written to an adjusted data file. {\tt NRml} then uses an interpolator generated from the {\tt nrpytutorial}\cite{NRpy} library to interpolate the adjusted data to the ET grid. {\tt NRml} uses {\tt HydroBase} and {\tt ADMBase} for TOV quantities, and uses {\tt Baikal} to calculate the constraint violations. $T^{\mu\nu}$ is calculated using {\tt GRHayLHD} and stored in {\tt TmunuBase}.
+
+\section{Using NRml\_TOV\_ET}
+
+In this section, I will explain the general use of this thorn. 
+
+\subsection{Basic Usage}
+
+For finding TOV solutions using {\tt NRml\_TOV\_ET}, one only needs to set up variables in a parfile. Since most of the EOS information is stored by {\tt GRHayL}, most of the {\tt NRml} parameters are related to the ODE methods themselves, with the exception of the beta equilibrium temperature {\tt Tin} and the choice of EOS type {\tt NRml\_EOS\_type}. To see examples of how to build a TOV parfile, just look at the examples in the {\tt par} directory and follow suit.
+
+Please note while using this thorn: {\tt NRml\_TOV\_ET} is meant to run fast. If your simulation is taking too long, make sure your solution will converge. Please check your parfile to make sure your outer radius limit is set to a value where the final solution of $\bar{r}$ is similar to your grid size chosen. On top of that, make sure your error is fine tuned to the simulation you are trying to run.
+
+\subsection{Compatible Equations of State}
+
+As mentioned earlier, {\tt NRml\_TOV\_ET} has 3 types of EOS that are compatible: Simple Polytrope, Piecewise Polytrope, and Tabulated EOS.
+
+As {\tt GRHayL}\cite{GRHayL} holds the information on the EOS, you must set its parameters in the parfile as well. Depending on the EOS you are using, you will set different parameters. For more details, please refer to the example parfiles in the {\tt par} directory. They act as templates of how your parfile should look.
+
+\subsection{Examples}
+
+Example parfiles can be found in the thorn's {\tt par} directory. There is one for each type of EOS:
+
+\begin{itemize}
+    \item {\tt Simple.par }
+    \begin{itemize}
+    \item A Simple Polytrope example, with $K=1.0$ and $\Gamma=2.0$
+    \end{itemize}
+    \item {\tt Piecewise.par }
+    \begin{itemize}
+    \item A Piecewise Polytrope example, using the Piecewise parameters for $K_i$ and $\Gamma_i$ of Read et. al for the SLy EOS.\cite{Read} 7 Regions are used in this example.
+    \end{itemize}
+    \item {\tt Tabulated.par }
+    \begin{itemize}
+    \item An Example of using a Tabulated EOS. One must replace the 
+    
+    {\tt GRHayLib::EOS\_tablepath } in the parfile to the location of you EOS table. We used an adjusted SLy4 table for this specific example.
+    \end{itemize}
+\end{itemize}
+
+{\tt Baikal} was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so these example parfiles still include constraint violation calculations.
+
+\subsection{Additional Output}
+
+In addition to the traditional ascii output that can be controlled by the user in the parfile, {\tt NRml\_TOV\_ET} also saves the raw TOV data to a {\tt .txt} file. It save 7 quantities from solving the TOV at each step, in this order:
+\begin{itemize}
+    \item Raw TOV:
+        \begin{itemize}
+            \item $r_{Schw}$ (Schwarzchild Radius)
+            \item $\rho_{e}$ (Total Energy Density)
+            \item $\rho_{b}$ (Total Baryon Density)
+            \item $P$ (Pressure)
+            \item $M$ (Mass)
+            \item $\nu$ (Metric function)
+            \item $\bar{r}$ (Isotropic Radius)
+        \end{itemize}
+\end{itemize}
+
+There is also an adjusted TOV data file, that normalizes $\bar{r}$, and finds lapse
+and conformal factor. There are eight quantities at each step in the following
+order:
+
+\begin{itemize}
+    \item Adjusted TOV:
+        \begin{itemize}
+            \item $r_{Schw}$
+            \item $\rho_{e}$
+            \item $\rho_{b}$
+            \item $P$
+            \item $M$
+            \item $e^{\nu}$ (Lapse)
+            \item $e^{4\phi}$ (Conformal Factor)
+            \item $\bar{r}$ (Normalized)
+        \end{itemize}
+\end{itemize}
+
+\section{Acknowledgements}
+
+I would like to specifically acknowledge {\tt OdieGM}, the base ODE solver developed by Gabe Steward, which can be found on github for general ODE use. I acknowledge the use of {\tt nrpytutorial}\cite{NRpy} to generate a base interpolator to put the TOV data on the grid. I acknowledge the use of the {\tt GRHayL} thorn, which was used to store and use EOS specific data in the solution to the TOVs. Finally, I acknowledge the original {\tt TOVSolver} in the Einstein Toolkit, to act as a reference in learning the toolkit, and how to interact with it.\cite{Hawke}.
+
+\begin{thebibliography}{9}
+\bibitem{Odie}
+G. Steward. Github repository: https://github.com/GMBlackjack/OdieGM
+%
+\bibitem{Baikal}
+Z. Etienne. Document in the nrpytutorial github repo: https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK\_thorn-BaikalETK.ipynb
+%
+\bibitem{GRHayL}
+S. Cupp, L. Werneck, T. Pierre Jacques, Z. Etienne. Paper In Prep (6/24). Thorn found in the GRHayL directory of the toolkit
+%
+\bibitem{Tolman}
+R.~C. Tolman, Phys. Rev. {\bf 55}, 364 (1939).
+%
+\bibitem{OppVol}
+J.~R. Oppenheimer and G. Volkoff, Physical Review {\bf 55}, 374 (1939).
+%
+\bibitem{NRpy}
+Z. Etienne. Github repository: https://github.com/zachetienne/nrpytutorial
+%
+\bibitem{Read}
+J. Read, B. Lackey, B. Owen, and J. Friedman, Phys. Rev. D {\bf 79}, 124032 (2008).
+%
+\bibitem{Hawke}
+I. Hawke and F. Loeffler. TOVSolver Thorn found in the EinsteinInitialData directory
+%
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+\end{document}
