@@ -413,7 +413,7 @@ void NRml_Normalize_and_set_data(FILE *TOV_data,
   exp4phi_arr[1] = pow((r_Schw_arr[1]/rbar_arr[1]),2.0);
   exp4phi_arr[0] = exp4phi_arr[1];
   
-  for(int i=2;i<=this_line;i++){
+  for(int i=2;i<this_line;i++){
       rbar_arr[i]    = rbar_arr[i]*normalize;
       expnu_arr[i]   = exp(expnu_arr[i] - nu_surface + log(1 -2.0*M_surface/R_Schw_surface));
       exp4phi_arr[i] = pow((r_Schw_arr[i]/rbar_arr[i]),2.0);
@@ -425,7 +425,7 @@ void NRml_Normalize_and_set_data(FILE *TOV_data,
 
   FILE *TOV_adjusted;
   TOV_adjusted = fopen(NRml_filename_adjusted,"w");
-  for(int i=0;i<=this_line;i++){
+  for(int i=0;i<this_line;i++){
     fprintf(TOV_adjusted, " %15.14e", r_Schw_arr[i]     ); //r_Schw
     fprintf(TOV_adjusted, " %15.14e", rho_energy_arr[i] ); //rho_energy
     fprintf(TOV_adjusted, " %15.14e", rho_baryon_arr[i] ); //rho_baryon
