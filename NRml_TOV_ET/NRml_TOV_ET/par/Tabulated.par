@@ -25,8 +25,6 @@ TmunuBase::timelevels            =  1
 TmunuBase::prolongation_type     = none
 
 #---------NRml_TOV_ET---------
-NRml_TOV_ET::NRml_filename = "Tabulated_Solution.txt"
-NRml_TOV_ET::NRml_filename_adjusted = "Tabulated_Solution_Adjusted.txt"
 NRml_TOV_ET::NRml_step = 1.0e-5
 NRml_TOV_ET::NRml_size = 100000000
 NRml_TOV_ET::NRml_Interpolation_Stencil = 8
@@ -95,7 +93,7 @@ cactus::cctk_itlast   =       0
 GRHayLib::con2prim_routine = "Palenzuela1D"
 #Even though we aren't using c2p, it does need to be set to something compatible with tabulated EOS
 GRHayLib::EOS_type = "Tabulated"
-GRHayLib::EOS_tablepath =  "/path/to/your/table.h5"
+GRHayLib::EOS_tablepath =  "/home/boye4060/projects/Tables/SLy4_3335_rho391_temp163_ye66_adjusted.h5"
 #Replace this with your table file path.
 GRHayLib::Y_e_atm = 1.0e-2
 GRHayLib::Y_e_min = -1.0

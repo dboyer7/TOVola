@@ -54,16 +54,6 @@ CCTK_REAL NRml_central_baryon_density "What's the initial baryon density? (Used 
 	0.0:* :: "Must be Positive"
 } 0.129285
 
-STRING NRml_filename "What is the name of the output raw TOV data"
-{
-	".*" :: "Any Filename"
-} "ooData.txt"
-
-STRING NRml_filename_adjusted "What is the name of the output adjusted TOV data"
-{
-  ".*" :: "Any filename."
-} "ooData_adjusted.txt"
-
 STRING NRml_EOS_type "What EOS type are you using?"
 {
 	"Simple" :: "Simple Polytrope"

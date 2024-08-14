@@ -1,5 +1,5 @@
 
-#include "nrpy_odiegm_proto.c"
+#include "nrpy_odiegm_proto.h"
 
 //This file actually holds the ODE evolution code. Ripped directly from OdieGM with no changes made.
 //For use in NRml_TOV.

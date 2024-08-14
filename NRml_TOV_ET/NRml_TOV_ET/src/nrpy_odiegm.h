@@ -1,13 +1,23 @@
+#include <cctk.h>
+#include <cctk_Arguments.h>
+#include <cctk_Parameters.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
 
-//UPDATE: OdieGM's Header file. Defines butcher tables. Ripped from OdieGM with no changes.
-//DO NOT TOUCH THIS FILE!!! All edits that need to be made are in the NRml_TOV_Driver.c file.
+//UPDATE: OdieGM's Header file. Defines butcher tables. Ripped from OdieGM with additional globals (I know, blasphemous!).
+//DO NOT TOUCH THIS FILE!!! All edits that need to be made are within the parfile.
 
-
+extern CCTK_REAL *NRml_Raw_rSchw;
+extern CCTK_REAL *NRml_Raw_rho_energy;
+extern CCTK_REAL *NRml_Raw_rho_baryon;
+extern CCTK_REAL *NRml_Raw_P;
+extern CCTK_REAL *NRml_Raw_M;
+extern CCTK_REAL *NRml_Raw_nu;
+extern CCTK_REAL *NRml_Raw_Iso_r;
+extern int NRml_Numpoints;
 
 
 

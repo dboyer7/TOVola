@@ -1,5 +1,5 @@
-#include "NRml_TOV_funcs.c" //nrpy_odiegm itself, for use in NRml_TOV.
-#include "NRml_TOV_user_methods.c" //Edited specifically for the TOV solver.
+#include "NRml_TOV_funcs.h" //nrpy_odiegm itself, for use in NRml_TOV.
+#include "NRml_TOV_user_methods.h" //Edited specifically for the TOV solver.
 #include "GRHayLib.h" //Access to GRHayL library in the ET
 #include <string.h>
 #include <stdio.h>
@@ -36,13 +36,26 @@
 // 
 // David Boyer (6/21/24)
 ********************************/
-void NRml_TOV_Driver(CCTK_ARGUMENTS){
+
+//Global pointers to save data. (Deal with it.)
+CCTK_REAL *NRml_Raw_rSchw = NULL;
+CCTK_REAL *NRml_Raw_rho_energy = NULL;
+CCTK_REAL *NRml_Raw_rho_baryon = NULL;
+CCTK_REAL *NRml_Raw_P = NULL;
+CCTK_REAL *NRml_Raw_M = NULL;
+CCTK_REAL *NRml_Raw_nu = NULL;
+CCTK_REAL *NRml_Raw_Iso_r = NULL;
+int NRml_Numpoints = 0;
+
+
+void NRml_TOV_Integrator_1(CCTK_ARGUMENTS){
 
     //Einstein Toolkit main function
 
     //Declare value from ET
     DECLARE_CCTK_PARAMETERS
-    CCTK_VINFO("Beginning ODE Solver \"Odie\" for NRml_TOV_ET...");
+    CCTK_INFO("First Integration: Analyzing how much memory to allocate");
+    CCTK_INFO("Beginning ODE Solver \"Odie\" for NRml_TOV_ET...");
 
     double rhoCentral_baryon = NRml_central_baryon_density;
 
@@ -58,93 +71,62 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
     //Thorn only has two methods available: (ARKF: (RK4(5))) or (ADP8: (DP7(8)))
     const nrpy_odiegm_step_type * step_type;
 
-    if (strcmp("ARKF",NRml_ODE_method) == 0) {
+    if (CCTK_EQUALS("ARKF",NRml_ODE_method)) {
        step_type = nrpy_odiegm_step_ARKF;}
-    else if (strcmp("ADP8",NRml_ODE_method) == 0) {
+    else if (CCTK_EQUALS("ADP8",NRml_ODE_method)) {
        step_type = nrpy_odiegm_step_ADP8;}
     else{
-      CCTK_VINFO("Invalid Step type. May only use ARKF or ADP8.");
-      CCTK_VINFO("Shutting down due to error.\n");
+      CCTK_INFO("Invalid Step type. May only use ARKF or ADP8.");
+      CCTK_INFO("Shutting down due to error.\n");
       exit(1);}
 
-    //additional tolerance values you can edit.
-    //Only mess with these if you know what you are doing.
-    //For more info, see OdieGM and the GSL ODE solver.
-    double scale_factor = NRml_scale_factor;
-    double error_safety = NRml_error_safety;
-    double ay_error_scaler = NRml_ay_error_scaler;
-    double ady_error_scaler = NRml_ady_error_scaler;
-    double max_step_adjustment = NRml_max_step_adjustment;
-    double min_step_adjustment = NRml_min_step_adjustment;
-    double absolute_max_step = NRml_absolute_max_step;
-    double absolute_min_step = NRml_absolute_min_step;
-    double error_upper_tolerance = NRml_error_upper_tolerance;
-    double error_lower_tolerance = NRml_error_lower_tolerance;
-
     //Initializing the EOS
-    if(strcmp("Simple",NRml_EOS_type) == 0){
-      CCTK_VINFO("Simple Polytrope");
+    if(CCTK_EQUALS("Simple",NRml_EOS_type)){
+      CCTK_INFO("Simple Polytrope");
       if(ghl_eos->neos!=1){
-        CCTK_VINFO("Error: Too many regions for the simple polytrope.");
-        CCTK_VINFO("Check your value for neos, or use a piecewise polytrope (type = 'p')");
-        CCTK_VINFO("Shutting down due to error...\n");
-        exit(1);}
+        CCTK_INFO("Error: Too many regions for the simple polytrope.");
+        CCTK_INFO("Check your value for neos, or use a piecewise polytrope (type = 'p')");
+        CCTK_ERROR("Shutting down due to error...\n");}
         }
-    else if(strcmp("Piecewise",NRml_EOS_type) == 0){
-      CCTK_VINFO("Piecewise Polytrope");}
-    else if(strcmp("Tabulated",NRml_EOS_type) == 0){
-      CCTK_VINFO("Tabulated EOS");
+    else if(CCTK_EQUALS("Piecewise",NRml_EOS_type)){
+      CCTK_INFO("Piecewise Polytrope");}
+    else if(CCTK_EQUALS("Tabulated",NRml_EOS_type)){
+      CCTK_INFO("Tabulated EOS");
       ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(NRml_Tin, ghl_eos);
       //printf("hit\n");
     }
     else{
-      CCTK_VINFO("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'");
-      CCTK_VINFO("Shutting down due to error...\n");
-      exit(1);}
+      CCTK_INFO("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'");
+      CCTK_ERROR("Shutting down due to error...\n");}
 
 
     const nrpy_odiegm_step_type * step_type_2;
     step_type_2 = step_type;
 
-    //A few error checks for the ODE steps.
-    if(step_type != step_type_2){
-    	CCTK_VINFO("ERROR: Hybridizing method disabled for the TOV solver.");
-	CCTK_VINFO("Shutting down due to error.\n");
-    	exit(1);}
-
+    bool no_adaptive_step;
     if(adaptive_step==true){
+      no_adaptive_step=false;
       if(step_type != nrpy_odiegm_step_AHE
 	 && step_type != nrpy_odiegm_step_ABS
 	 && step_type != nrpy_odiegm_step_ARKF
 	 && step_type != nrpy_odiegm_step_ACK
 	 && step_type != nrpy_odiegm_step_ADP5
 	 && step_type != nrpy_odiegm_step_ADP8){
-	CCTK_VINFO("ERROR: Incompatible step type with adaptive method.");
-	CCTK_VINFO("Shutting down due to error.\n");
-	exit(1);}
+	CCTK_INFO("ERROR: Incompatible step type with adaptive method.");
+	CCTK_ERROR("Shutting down due to error.\n");}
     }
-
-    if(adaptive_step==false){
+    else{
+    	no_adaptive_step=true;
       if(step_type == nrpy_odiegm_step_AHE
          || step_type == nrpy_odiegm_step_ABS
          || step_type == nrpy_odiegm_step_ARKF
          || step_type == nrpy_odiegm_step_ACK
          || step_type == nrpy_odiegm_step_ADP5
          || step_type == nrpy_odiegm_step_ADP8){
-        CCTK_VINFO("ERROR: Incompatible step type with non-adaptive method.");
-        CCTK_VINFO("Shutting down due to error.\n");
-        exit(1);}
+        CCTK_INFO("ERROR: Incompatible step type with non-adaptive method.");
+        CCTK_ERROR("Shutting down due to error.\n");}
     }
-
-    //GSL requires the use of the variable 'no_adaptive step'
-    //However, double negatives are confusing for user interface.
-    //We use the postive variable inputted by the user to declare the GSL compatible variable here.
-    bool no_adaptive_step;
-    if (adaptive_step == true){
-      no_adaptive_step=false;}
-    else{
-      no_adaptive_step=true;}
-
+    
     //Define an ODE struct
     double absolute_error_limit = error_limit;
     double relative_error_limit = error_limit;
@@ -163,16 +145,16 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
     d = nrpy_odiegm_driver_alloc_y_new(&system, step_type, step, absolute_error_limit, relative_error_limit); 
 
     //setting the control struct. See OdieGM and the GSL ODE solver for more info.
-    d->c->scale_factor = scale_factor;
-    d->c->error_safety = error_safety;
-    d->c->ay_error_scaler = ay_error_scaler;
-    d->c->ady_error_scaler = ady_error_scaler;
-    d->c->max_step_adjustment = max_step_adjustment;
-    d->c->min_step_adjustment = min_step_adjustment;
-    d->c->absolute_max_step = absolute_max_step;
-    d->c->absolute_min_step = absolute_min_step;
-    d->c->error_upper_tolerance = error_upper_tolerance;
-    d->c->error_lower_tolerance = error_lower_tolerance;
+    d->c->scale_factor = NRml_scale_factor;
+    d->c->error_safety = NRml_error_safety;
+    d->c->ay_error_scaler = NRml_ay_error_scaler;
+    d->c->ady_error_scaler = NRml_ady_error_scaler;
+    d->c->max_step_adjustment = NRml_max_step_adjustment;
+    d->c->min_step_adjustment = NRml_min_step_adjustment;
+    d->c->absolute_max_step = NRml_absolute_max_step;
+    d->c->absolute_min_step = NRml_absolute_min_step;
+    d->c->error_upper_tolerance = NRml_error_upper_tolerance;
+    d->c->error_lower_tolerance = NRml_error_lower_tolerance;
 
     //Some OdieGM checks for AB methods
     int method_type = 1;
@@ -201,29 +183,204 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
     get_initial_condition(y,&cp); 
     assign_constants(c,&cp); 
 
-    FILE *fp2;
-    fp2 = fopen(NRml_filename,"w");
-    CCTK_VINFO("Printing to file '%s'.",NRml_filename);
-
     
-    // Print the order: r, rho_energy, rho_baryon, P, M, nu, Iso_r
-    CCTK_VINFO("INITIAL: Position:,\t%f,\t",current_position);
+    //For the first integration, we are just counting up how much memory we need to allocate.
+    NRml_Numpoints++;
 
-    fprintf(fp2, " %15.14e", current_position); //r
-    fprintf(fp2, " %15.14e", c[0]); //rho_energy
-    fprintf(fp2, " %15.14e", c[1]); //rho_baryon
-    fprintf(fp2, " %15.14e", y[0]); //P
-    fprintf(fp2, " %15.14e", y[2]); //M
-    fprintf(fp2, " %15.14e", y[1]); //nu
-    fprintf(fp2, " %15.14e", y[3]); //Iso_r
-    for (int n = 0; n < number_of_equations; n++) {
-        printf("Equation %i:,\t%15.14e,\t",n, y[n]);
+    for (int i = 0; i < size; i++){
+        
+        if (method_type == 2 && i == 0 && step_type_2 != nrpy_odiegm_step_AB) {
+            d->s->type = step_type_2;
+            d->s->rows = step_type_2->rows;
+            d->s->columns = step_type_2->columns;
+            d->s->method_type = 0;
+            d->s->adams_bashforth_order = adams_bashforth_order;
+            d->e->no_adaptive_step = true;
+        } else if (step_type != step_type_2 && method_type == 2 && i == adams_bashforth_order) {
+            d->s->type = step_type;
+            d->s->rows = step_type->rows;
+            d->s->columns = step_type->columns;
+            d->s->method_type = 2;
+            d->s->adams_bashforth_order = adams_bashforth_order;
+            d->e->no_adaptive_step = true;
+        }
+
+        nrpy_odiegm_evolve_apply(d->e, d->c, d->s, &system, &current_position, current_position+step, &step, y);
+        
+
+        exception_handler(current_position,y);
+        const_eval(current_position,y,&cp);
+        assign_constants(c,&cp);
+    	
+    	NRml_Numpoints++;
+
+        if (do_we_terminate(current_position, y, &cp) == 1) {
+            i = size-1;
+             
+        } 
+        if (i == size-1) { 
+            CCTK_VINFO("FINAL: rSchw:,\t%15.14e,\t",current_position);
+            CCTK_VINFO("FINAL: Mass :,\t%15.14e,\t",y[2]);
+            CCTK_VINFO("FINAL: Nu   :,\t%15.14e,\t",y[1]);
+            CCTK_VINFO("FINAL: rbar :,\t%15.14e,\t",y[3]);
+        }
     }
-    for (int n = 0; n < number_of_constants; n++) {
-        printf("Constant %i:,\t%15.14e,\t",n, c[n]);
+
+
+    //fclose(fp2);
+
+    nrpy_odiegm_driver_free(d);
+    CCTK_INFO("ODE Solver \"Odie\" for NRml_TOV_ET Shutting Down...\n");
+    return;
+    
+} // -GM, master of dogs (OdieGM code)
+  // -David Boyer, Edited for NRml_TOV and NRml_TOV_ET
+  
+void NRml_TOV_Integrator_2(CCTK_ARGUMENTS){
+
+    //Einstein Toolkit main function
+
+    //Declare value from ET
+    DECLARE_CCTK_PARAMETERS
+    CCTK_INFO("Second Integration: Writing solution to Memory");
+    CCTK_INFO("Beginning ODE Solver \"Odie\" for NRml_TOV_ET...");
+
+    int NRml_this_point = 0;
+    double rhoCentral_baryon = NRml_central_baryon_density;
+
+    //Values for ODE steps and Error
+    double step = NRml_step;
+    double current_position = 0.0;
+    const int size = NRml_size;
+    int adams_bashforth_order = 4; //Only edit if you are using an AB method (NOT RECCOMMENDED)
+    bool adaptive_step = true;
+    double error_limit = NRml_error_limit;
+
+    //Choose your desired ODE method
+    //Thorn only has two methods available: (ARKF: (RK4(5))) or (ADP8: (DP7(8)))
+    const nrpy_odiegm_step_type * step_type;
+
+    if (CCTK_EQUALS("ARKF",NRml_ODE_method)) {
+       step_type = nrpy_odiegm_step_ARKF;}
+    else if (CCTK_EQUALS("ADP8",NRml_ODE_method)) {
+       step_type = nrpy_odiegm_step_ADP8;}
+    else{
+      CCTK_INFO("Invalid Step type. May only use ARKF or ADP8.");
+      CCTK_ERROR("Shutting down due to error.\n");}
+
+    //Initializing the EOS
+    if(CCTK_EQUALS("Simple",NRml_EOS_type)){
+      CCTK_INFO("Simple Polytrope");
+      if(ghl_eos->neos!=1){
+        CCTK_INFO("Error: Too many regions for the simple polytrope.");
+        CCTK_INFO("Check your value for neos, or use a piecewise polytrope (type = 'p')");
+        CCTK_ERROR("Shutting down due to error...\n");}
+        }
+    else if(CCTK_EQUALS("Piecewise",NRml_EOS_type)){
+      CCTK_INFO("Piecewise Polytrope");}
+    else if(CCTK_EQUALS("Tabulated",NRml_EOS_type)){
+      CCTK_INFO("Tabulated EOS");
+      ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(NRml_Tin, ghl_eos);
+      //printf("hit\n");
     }
-    printf("\n");
-    fprintf(fp2,"\n");
+    else{
+      CCTK_INFO("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'");
+      CCTK_ERROR("Shutting down due to error...\n");}
+
+
+    const nrpy_odiegm_step_type * step_type_2;
+    step_type_2 = step_type;
+
+    bool no_adaptive_step;
+    if(adaptive_step==true){
+      no_adaptive_step=false;
+      if(step_type != nrpy_odiegm_step_AHE
+	 && step_type != nrpy_odiegm_step_ABS
+	 && step_type != nrpy_odiegm_step_ARKF
+	 && step_type != nrpy_odiegm_step_ACK
+	 && step_type != nrpy_odiegm_step_ADP5
+	 && step_type != nrpy_odiegm_step_ADP8){
+	CCTK_INFO("ERROR: Incompatible step type with adaptive method.");
+	CCTK_ERROR("Shutting down due to error.\n");}
+    }
+
+    if(adaptive_step==false){
+      no_adaptive_step=true;
+      if(step_type == nrpy_odiegm_step_AHE
+         || step_type == nrpy_odiegm_step_ABS
+         || step_type == nrpy_odiegm_step_ARKF
+         || step_type == nrpy_odiegm_step_ACK
+         || step_type == nrpy_odiegm_step_ADP5
+         || step_type == nrpy_odiegm_step_ADP8){
+        CCTK_INFO("ERROR: Incompatible step type with non-adaptive method.");
+        CCTK_ERROR("Shutting down due to error.\n");}
+    }
+
+    //Define an ODE struct
+    double absolute_error_limit = error_limit;
+    double relative_error_limit = error_limit;
+    int number_of_equations = 4;
+    int number_of_constants = 2;
+    struct constant_parameters cp = { 
+      .dimension = number_of_constants,
+    };
+    cp.rhoCentral_baryon = rhoCentral_baryon;
+    
+
+    nrpy_odiegm_system system = {diffy_Q_eval,known_Q_eval,number_of_equations,&cp};
+    
+
+    nrpy_odiegm_driver *d;
+    d = nrpy_odiegm_driver_alloc_y_new(&system, step_type, step, absolute_error_limit, relative_error_limit); 
+
+    //setting the control struct. See OdieGM and the GSL ODE solver for more info.
+    d->c->scale_factor = NRml_scale_factor;
+    d->c->error_safety = NRml_error_safety;
+    d->c->ay_error_scaler = NRml_ay_error_scaler;
+    d->c->ady_error_scaler = NRml_ady_error_scaler;
+    d->c->max_step_adjustment = NRml_max_step_adjustment;
+    d->c->min_step_adjustment = NRml_min_step_adjustment;
+    d->c->absolute_max_step = NRml_absolute_max_step;
+    d->c->absolute_min_step = NRml_absolute_min_step;
+    d->c->error_upper_tolerance = NRml_error_upper_tolerance;
+    d->c->error_lower_tolerance = NRml_error_lower_tolerance;
+
+    //Some OdieGM checks for AB methods
+    int method_type = 1;
+    if (step_type->rows == step_type->columns) {
+        method_type = 0;  
+    } 
+    if (step_type->rows == 19) { 
+        method_type = 2;
+    } else {
+        adams_bashforth_order = 0;
+    }
+    d->s->adams_bashforth_order = adams_bashforth_order;
+    d->e->no_adaptive_step = no_adaptive_step;
+    
+
+    if (method_type == 2) {
+        CCTK_VINFO("Method Order: %i.",adams_bashforth_order);
+    } else {
+        CCTK_VINFO("Method Order: %i.",step_type->order);            
+    }
+
+    //Declare ODEs and begin SOLVING!
+    double y[number_of_equations];
+    double c[number_of_constants];
+    
+    get_initial_condition(y,&cp); 
+    assign_constants(c,&cp); 
+
+    //For the Second Integration, we are actually writing the solution to memory
+    NRml_Raw_rSchw[NRml_this_point] = current_position;
+    NRml_Raw_rho_energy[NRml_this_point] = c[0];
+    NRml_Raw_rho_baryon[NRml_this_point] = c[1];
+    NRml_Raw_P[NRml_this_point] = y[0];
+    NRml_Raw_M[NRml_this_point] = y[2];
+    NRml_Raw_nu[NRml_this_point] = y[1];
+    NRml_Raw_Iso_r[NRml_this_point] = y[3];
+    NRml_this_point++;
 
     for (int i = 0; i < size; i++){
         
@@ -250,43 +407,70 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
         const_eval(current_position,y,&cp);
         assign_constants(c,&cp);
 
-	// Order: r, rho_energy, rho_baryon, P, M, nu, Iso_r
-
-	fprintf(fp2, " %15.14e", current_position); //r
-	fprintf(fp2, " %15.14e", c[0]); //rho_energy
-	fprintf(fp2, " %15.14e", c[1]); //rho_baryon
-	fprintf(fp2, " %15.14e", y[0]); //P
-	fprintf(fp2, " %15.14e", y[2]); //M
-	fprintf(fp2, " %15.14e", y[1]); //nu
-	fprintf(fp2, " %15.14e", y[3]); //Iso_r
-    
-        fprintf(fp2,"\n");
+	NRml_Raw_rSchw[NRml_this_point] = current_position;
+    	NRml_Raw_rho_energy[NRml_this_point] = c[0];
+    	NRml_Raw_rho_baryon[NRml_this_point] = c[1];
+    	NRml_Raw_P[NRml_this_point] = y[0];
+    	NRml_Raw_M[NRml_this_point] = y[2];
+    	NRml_Raw_nu[NRml_this_point] = y[1];
+    	NRml_Raw_Iso_r[NRml_this_point] = y[3];
+    	NRml_this_point++;
 
         if (do_we_terminate(current_position, y, &cp) == 1) {
             i = size-1;
              
         } 
         if (i == size-1) { 
-            CCTK_VINFO("FINAL: Position:,\t%15.14e,\t",current_position);
-            for (int n = 0; n < number_of_equations; n++) {
-                printf("Equation %i:,\t%15.14e,\t",n, y[n]);
-            }
-            for (int n = 0; n < number_of_constants; n++) {
-                printf("Constant %i:,\t%15.14e,\t",n, c[n]);
-            }
-            printf("\n");
+            CCTK_VINFO("FINAL: rSchw:,\t%15.14e,\t",current_position);
+            CCTK_VINFO("FINAL: Mass :,\t%15.14e,\t",y[2]);
+            CCTK_VINFO("FINAL: Nu   :,\t%15.14e,\t",y[1]);
+            CCTK_VINFO("FINAL: rbar :,\t%15.14e,\t",y[3]);
         }
     }
 
 
-    fclose(fp2);
+    //fclose(fp2);
 
     nrpy_odiegm_driver_free(d);
-    CCTK_VINFO("ODE Solver \"Odie\" for NRml_TOV_ET Shutting Down...\n");
+    CCTK_INFO("ODE Solver \"Odie\" for NRml_TOV_ET Shutting Down...\n");
     return;
     
 } // -GM, master of dogs (OdieGM code)
   // -David Boyer, Edited for NRml_TOV and NRml_TOV_ET
+
+#define REAL double
+
+//Allocate space for solution  
+void NRml_TOV_Allocate(CCTK_ARGUMENTS){
+
+	CCTK_INFO("NRml Allocating required Memory");
+	NRml_Raw_rSchw      =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_rho_energy =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_rho_baryon =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_P 	    =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_M 	    =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_nu 	    =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	NRml_Raw_Iso_r      =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+	return;
+}
+
+//Free Memory
+void NRml_TOV_Cleanup(CCTK_ARGUMENTS){
+	
+	CCTK_INFO("NRml's Final Cleanup: Freeing Memory");
+	if (NRml_Raw_rSchw != NULL) { free(NRml_Raw_rSchw);}
+	if (NRml_Raw_rho_energy != NULL) { free(NRml_Raw_rho_energy);}
+	if (NRml_Raw_rho_baryon != NULL) { free(NRml_Raw_rho_baryon);}
+	if (NRml_Raw_P != NULL) { free(NRml_Raw_P);}
+	if (NRml_Raw_M != NULL) { free(NRml_Raw_M);}
+	if (NRml_Raw_nu != NULL) { free(NRml_Raw_nu);}
+	if (NRml_Raw_Iso_r != NULL) { free(NRml_Raw_Iso_r);
+	NRml_Numpoints = 0;}
+	
+	//Finish up!
+  	CCTK_INFO("NRml_TOV_ET Shutting down...\n");
+	return;
+}
 
 
 //These extra functions are for use in the toolkit
@@ -296,8 +480,6 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
 //Grid placements inspired heavily by ET's original TOVsolver in EinsteinInitialData by Hawke and Loeffler 2009, So NRml_TOV_ET can act as a drop-in replacement.
 
 //First, defines
-#define REAL double
-
 #define velx (&vel[0*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
 #define vely (&vel[1*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
 #define velz (&vel[2*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
@@ -335,25 +517,10 @@ void NRml_TOV_Driver(CCTK_ARGUMENTS){
 
 //Count lines in file
 //Generated from nrpytutorial, with minor edits for NRml_TOV_ET
-int NRml_count_lines(FILE *TOV_data){
-  int num_lines = 0;
-  char * line = NULL;
-  size_t len = 0;
-  ssize_t read;
-
-  while((read = getline(&line, &len, TOV_data)) != -1){
-    num_lines++;
-  }
-  rewind(TOV_data);
-  free(line);
-  return num_lines;
-  
-}
 
 //Read and Normalize Raw TOV data, and then set to arrays
 //Generated from nrpytutorial, with minor edits for use by NRml_TOV_ET
-void NRml_Normalize_and_set_data(FILE *TOV_data,
-				 REAL *restrict r_Schw_arr,
+void NRml_Normalize_and_set_data(REAL *restrict r_Schw_arr,
 				 REAL *restrict rho_energy_arr,
 				 REAL *restrict rho_baryon_arr,
 				 REAL *restrict P_arr,
@@ -364,35 +531,23 @@ void NRml_Normalize_and_set_data(FILE *TOV_data,
 
   DECLARE_CCTK_PARAMETERS
 
-  CCTK_VINFO("Reading in raw TOV data...");
-  
-  char* line = NULL;
-  size_t len = 0;
-  ssize_t read;
+    //CCTK_VINFO("Reading in raw TOV data...");
 
   int this_line = 0;
-  while ((read = getline(&line, &len, TOV_data)) != -1){
-    const char delimiters[] = " \t";
-    char *token;
-
-    token=strtok(line, delimiters);
-    if(token==NULL){
-      fprintf(stderr, "INFO (NRml_TOV) ERROR while reading raw file. Shutting down\n");
-      exit(1);
-    }
-    r_Schw_arr[this_line]     = strtod(token, NULL); token = strtok( NULL, delimiters );
-    rho_energy_arr[this_line]        = strtod(token, NULL); token = strtok( NULL, delimiters );
-    rho_baryon_arr[this_line] = strtod(token, NULL); token = strtok( NULL, delimiters );
-    P_arr[this_line]          = strtod(token, NULL); token = strtok( NULL, delimiters );
-    M_arr[this_line]          = strtod(token, NULL); token = strtok( NULL, delimiters );
-    expnu_arr[this_line]      = strtod(token, NULL); token = strtok( NULL, delimiters );
-    rbar_arr[this_line]       = strtod(token, NULL);	
+  while (this_line < NRml_Numpoints){
+    r_Schw_arr[this_line]     = NRml_Raw_rSchw[this_line];
+    rho_energy_arr[this_line] = NRml_Raw_rho_energy[this_line];
+    rho_baryon_arr[this_line] = NRml_Raw_rho_baryon[this_line];
+    P_arr[this_line]          = NRml_Raw_P[this_line];
+    M_arr[this_line]          = NRml_Raw_M[this_line];
+    expnu_arr[this_line]      = NRml_Raw_nu[this_line];
+    rbar_arr[this_line]       = NRml_Raw_Iso_r[this_line];	
     this_line++;
   }
 
-  CCTK_VINFO("Raw data Successfully read in!");
+  //CCTK_VINFO("Raw data Successfully read in!");
 
-  CCTK_VINFO("Normalizing raw TOV data..");
+  CCTK_INFO("Normalizing raw TOV data..");
   
   //Find the surface of the star
   double R_Schw_surface = -100;
@@ -419,29 +574,7 @@ void NRml_Normalize_and_set_data(FILE *TOV_data,
       exp4phi_arr[i] = pow((r_Schw_arr[i]/rbar_arr[i]),2.0);
     }
 
-  CCTK_VINFO("Normalization of raw data complete!");
-
-  CCTK_VINFO("Writing adjusted data to file '%s'...",NRml_filename_adjusted);
-
-  FILE *TOV_adjusted;
-  TOV_adjusted = fopen(NRml_filename_adjusted,"w");
-  for(int i=0;i<this_line;i++){
-    fprintf(TOV_adjusted, " %15.14e", r_Schw_arr[i]     ); //r_Schw
-    fprintf(TOV_adjusted, " %15.14e", rho_energy_arr[i] ); //rho_energy
-    fprintf(TOV_adjusted, " %15.14e", rho_baryon_arr[i] ); //rho_baryon
-    fprintf(TOV_adjusted, " %15.14e", P_arr[i]          ); //P
-    fprintf(TOV_adjusted, " %15.14e", M_arr[i]          ); //M
-    fprintf(TOV_adjusted, " %15.14e", expnu_arr[i]      ); //Lapse
-    fprintf(TOV_adjusted, " %15.14e", exp4phi_arr[i]    ); //Conformal Factor
-    fprintf(TOV_adjusted, " %15.14e", rbar_arr[i]       ); //Iso_r
-    fprintf(TOV_adjusted, "\n");
-
-  }
-
-  CCTK_VINFO("Writing Successful!");
-  fclose(TOV_adjusted);
-  free(line);
-  return;
+  CCTK_INFO("Normalization of raw data complete!");
   
 }
 
@@ -452,11 +585,9 @@ static inline int bisection_idx_finder(const REAL rrbar, const int numlines_in_f
   int x2 = numlines_in_file-1;
   REAL y1 = rrbar-rbar_arr[x1];
   REAL y2 = rrbar-rbar_arr[x2];
-  //if(y1 == 0) {return x1;}
-  //if(y2 == 0) {return x2;}
   if(y1*y2 > 0) {
     CCTK_VINFO("INTERPOLATION BRACKETING ERROR %e | %e %e\n",rrbar,y1,y2);
-    exit(1);
+    CCTK_ERROR("Shutting down due to error");
   }
   for(int i=0;i<numlines_in_file;i++) {
     int x_midpoint = (x1+x2)/2;
@@ -469,15 +600,13 @@ static inline int bisection_idx_finder(const REAL rrbar, const int numlines_in_f
       y1 = y_midpoint;
     }
     if( abs(x2-x1) == 1 ) {
-      //printf("%d\n", fabs(rrbar-rbar_arr[x1]) < fabs(rrbar-rbar_arr[x2]));
       // If rbar_arr[x1] is closer to rrbar than rbar_arr[x2] then return x1:
       if(fabs(rrbar-rbar_arr[x1]) < fabs(rrbar-rbar_arr[x2])) {return x1;}
       // Otherwiser return x2:
       return x2;
     }
   }
-  CCTK_VINFO("INTERPOLATION BRACKETING ERROR: DID NOT CONVERGE.\n");
-  exit(1);
+  CCTK_ERROR("INTERPOLATION BRACKETING ERROR: DID NOT CONVERGE.\n");
 }
 
 //Interpolate to grid point
@@ -577,51 +706,41 @@ void NRml_TOV_Copy(CCTK_INT size, CCTK_REAL *var_p, CCTK_REAL *var)
 
 //Interpollate TOV data to grid
 //Parts of this function inspired by original TOVsolver in toolkit, namely the populate timelevels portion.
-void NRml_interp_to_grid(CCTK_ARGUMENTS){
+void NRml_interp_Driver(CCTK_ARGUMENTS){
 
   DECLARE_CCTK_ARGUMENTS
   DECLARE_CCTK_PARAMETERS
   
-  FILE *raw_TOV = fopen(NRml_filename, "r");
-  if (raw_TOV == NULL) {
-    fprintf(stderr,"INFO (NRml_TOV) ERROR: could not open file %s\n",NRml_filename);
-    exit(1);
-  }
-
   //Allocate memory for data storage
-  int num_lines = NRml_count_lines(raw_TOV);
-
-  REAL *r_Schw_arr =     (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *rho_energy_arr = (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *rho_baryon_arr = (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *P_arr =          (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *M_arr =          (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *expnu_arr =      (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *exp4phi_arr =    (REAL *)malloc(sizeof(REAL)*num_lines);
-  REAL *rbar_arr =       (REAL *)malloc(sizeof(REAL)*num_lines);
+  REAL *r_Schw_arr =     (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *rho_energy_arr = (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *rho_baryon_arr = (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *P_arr =          (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *M_arr =          (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *expnu_arr =      (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *exp4phi_arr =    (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
+  REAL *rbar_arr =       (REAL *)malloc(sizeof(REAL)*NRml_Numpoints);
 
   //Normalize and set arrays
-  NRml_Normalize_and_set_data(raw_TOV, r_Schw_arr,rho_energy_arr,rho_baryon_arr,P_arr,M_arr,expnu_arr,exp4phi_arr,rbar_arr);
-  //Close file
-  fclose(raw_TOV);
+  NRml_Normalize_and_set_data(r_Schw_arr,rho_energy_arr,rho_baryon_arr,P_arr,M_arr,expnu_arr,exp4phi_arr,rbar_arr);
   
   //Find Star's Surface
   REAL Rbar = -100;
   int Rbar_idx = -100;
-  for(int i=1;i<num_lines;i++) {
+  for(int i=1;i<NRml_Numpoints;i++) {
     if(rho_energy_arr[i-1]>0 && rho_energy_arr[i]==0) { Rbar = rbar_arr[i-1]; Rbar_idx = i-1; }
   }
   
   
   //Now for the actual grid placements. Go over all grid points
-  CCTK_VINFO("Beginning Grid Placements...");
+  CCTK_INFO("Beginning Grid Placements...");
   for(int i=0; i<cctk_lsh[0]; i++){ //printf("hiti i=%d\n\n", i);
   	for(int j=0; j<cctk_lsh[1]; j++){ //printf("hitj j=%d\n\n", j);
   		for(int k=0; k<cctk_lsh[2]; k++){ //printf("hitk k=%d\n\n", k);
   			int i3d=CCTK_GFINDEX3D(cctkGH,i,j,k); //3D index
   			REAL NRml_rGrid = sqrt((x[i3d]*x[i3d])+(y[i3d]*y[i3d])+(z[i3d]*z[i3d])); //magnitude of r on the grid
   			REAL NRml_rho_energy, NRml_rho_baryon, NRml_P, NRml_M, NRml_expnu, NRml_exp4phi; //TOV quantities
-  			TOV_interpolate_1D(NRml_rGrid, Rbar, Rbar_idx,NRml_Interpolation_Stencil,num_lines, 
+  			TOV_interpolate_1D(NRml_rGrid, Rbar, Rbar_idx,NRml_Interpolation_Stencil,NRml_Numpoints, 
   				r_Schw_arr,rho_energy_arr,rho_baryon_arr,P_arr,M_arr,expnu_arr,exp4phi_arr,rbar_arr,
   				&NRml_rho_energy,&NRml_rho_baryon,&NRml_P,&NRml_M,&NRml_expnu,&NRml_exp4phi);		
   			rho[i3d] = NRml_rho_baryon;
@@ -663,10 +782,10 @@ void NRml_interp_to_grid(CCTK_ARGUMENTS){
   	}
   }
   			
-  CCTK_VINFO("Grid Placement Successful!");
+  CCTK_INFO("Grid Placement Successful!");
   
   //This pice of the code was VERY heavily inspired by the original ET TOVSolver, with minor edits for NRml_TOV_ET
-  CCTK_VINFO("Finalizing Grid and freeing Memory...\n");
+  CCTK_INFO("Finalizing Grid...\n");
   int i3d = cctk_lsh[2]*cctk_lsh[1]*cctk_lsh[0];
   switch(NRml_TOV_Populate_Timelevels)
   {
@@ -701,7 +820,7 @@ void NRml_interp_to_grid(CCTK_ARGUMENTS){
     case 1:
         break;
     default:
-        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+        CCTK_VWARN(CCTK_WARN_ABORT,
                    "Unsupported number of NRml_TOV_Populate_TimelevelsL: %d",
                    (int)NRml_TOV_Populate_Timelevels);
         break;
@@ -718,8 +837,7 @@ void NRml_interp_to_grid(CCTK_ARGUMENTS){
   free(rbar_arr);
   
   //Finish up. Goodbye!
-  CCTK_VINFO("Complete! Enjoy your Initial Data!");
-  CCTK_VINFO("NRml_TOV_ET Shutting down...\n");
+  CCTK_INFO("Complete! Enjoy your Initial Data!\n\n");
 }
 
 //NRml_TOV_ET: By David Boyer

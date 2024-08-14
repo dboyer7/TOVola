@@ -35,19 +35,8 @@ necessary (as it should). For examples of each EOS type, see the par directory.
 3. Output
 ==========
 
-In addition to the traditional ascii output that can be controlled by the user, 
-NRml_TOV_ET also saves the raw TOV data to a .txt file that can be looked at anytime.
-It save 7 quantities from solving the TOV at each step, in this order:
-
-Raw TOV:
-r_Schw, rho_energy, rho_baryon, P, M, nu, r_Iso(rbar)
-
-There is also an adjusted TOV data file, that normalizes rbar, and finds lapse
-and conformal factor. There are eight quantities at each step in the following
-order:
-
-Adjusted TOV:
-r_Schw, rho_energy, rho_baryon, P, M, lapse(expnu), conformal factor(exp4phi), Normalized rbar
+You can output via ascii data from the toolkit. For raw data, use the standalone solver
+outside the toolkit.
 
 ==========
 4. Testing

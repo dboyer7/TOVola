@@ -25,8 +25,6 @@ TmunuBase::timelevels            =  1
 TmunuBase::prolongation_type     = none
 
 #---------NRml_TOV_ET---------
-NRml_TOV_ET::NRml_filename = "Piecewise_Solution.txt"
-NRml_TOV_ET::NRml_filename_adjusted = "Piecewise_Solution_Adjusted.txt"
 NRml_TOV_ET::NRml_step = 1.0e-5
 NRml_TOV_ET::NRml_size = 100000000
 NRml_TOV_ET::NRml_Interpolation_Stencil = 12

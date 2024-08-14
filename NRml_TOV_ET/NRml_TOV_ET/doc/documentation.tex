@@ -207,40 +207,6 @@ Example parfiles can be found in the thorn's {\tt par} directory. There is one f
 
 {\tt Baikal} was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so these example parfiles still include constraint violation calculations.
 
-\subsection{Additional Output}
-
-In addition to the traditional ascii output that can be controlled by the user in the parfile, {\tt NRml\_TOV\_ET} also saves the raw TOV data to a {\tt .txt} file. It save 7 quantities from solving the TOV at each step, in this order:
-\begin{itemize}
-    \item Raw TOV:
-        \begin{itemize}
-            \item $r_{Schw}$ (Schwarzchild Radius)
-            \item $\rho_{e}$ (Total Energy Density)
-            \item $\rho_{b}$ (Total Baryon Density)
-            \item $P$ (Pressure)
-            \item $M$ (Mass)
-            \item $\nu$ (Metric function)
-            \item $\bar{r}$ (Isotropic Radius)
-        \end{itemize}
-\end{itemize}
-
-There is also an adjusted TOV data file, that normalizes $\bar{r}$, and finds lapse
-and conformal factor. There are eight quantities at each step in the following
-order:
-
-\begin{itemize}
-    \item Adjusted TOV:
-        \begin{itemize}
-            \item $r_{Schw}$
-            \item $\rho_{e}$
-            \item $\rho_{b}$
-            \item $P$
-            \item $M$
-            \item $e^{\nu}$ (Lapse)
-            \item $e^{4\phi}$ (Conformal Factor)
-            \item $\bar{r}$ (Normalized)
-        \end{itemize}
-\end{itemize}
-
 \section{Acknowledgements}
 
 I would like to specifically acknowledge {\tt OdieGM}, the base ODE solver developed by Gabe Steward, which can be found on github for general ODE use. I acknowledge the use of {\tt nrpytutorial}\cite{NRpy} to generate a base interpolator to put the TOV data on the grid. I acknowledge the use of the {\tt GRHayL} thorn, which was used to store and use EOS specific data in the solution to the TOVs. Finally, I acknowledge the original {\tt TOVSolver} in the Einstein Toolkit, to act as a reference in learning the toolkit, and how to interact with it.\cite{Hawke}.
