@@ -1,3 +1,2 @@
 #ignore all backup files
-*.c~
-*.h~
+*~
