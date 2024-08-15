@@ -765,14 +765,7 @@ void NRml_interp_Driver(CCTK_ARGUMENTS){
 			velx[i3d] = 0.0;
 			vely[i3d] = 0.0;
 			velz[i3d] = 0.0;
-	        	w_lorentz[i3d] = 1/sqrt(1.0-(
-                        	  gxx[i3d] * velx[i3d] * velx[i3d]+
-                        	  gyy[i3d] * vely[i3d] * vely[i3d]+
-                        	  gzz[i3d] * velz[i3d] * velz[i3d]+
-                        	2*gxy[i3d] * velx[i3d] * vely[i3d]+
-                        	2*gxz[i3d] * velx[i3d] * velz[i3d]+
-                        	2*gyz[i3d] * vely[i3d] * velz[i3d])*
-                        	NRml_exp4phi);
+	        	w_lorentz[i3d] = 1.0;
   		}
   	}
   }
