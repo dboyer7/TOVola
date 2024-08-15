@@ -221,6 +221,7 @@ void NRml_TOV_Integrator_1(CCTK_ARGUMENTS){
         if (i == size-1) { 
             CCTK_INFO("Finished Integration!");
             CCTK_VINFO("FINAL: Mass :,\t%15.14e,\t",y[2]);
+            }
     }
 
 
