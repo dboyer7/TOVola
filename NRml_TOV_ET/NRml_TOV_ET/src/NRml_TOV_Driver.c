@@ -219,11 +219,8 @@ void NRml_TOV_Integrator_1(CCTK_ARGUMENTS){
              
         } 
         if (i == size-1) { 
-            CCTK_VINFO("FINAL: rSchw:,\t%15.14e,\t",current_position);
+            CCTK_INFO("Finished Integration!");
             CCTK_VINFO("FINAL: Mass :,\t%15.14e,\t",y[2]);
-            CCTK_VINFO("FINAL: Nu   :,\t%15.14e,\t",y[1]);
-            CCTK_VINFO("FINAL: rbar :,\t%15.14e,\t",y[3]);
-        }
     }
 
 
@@ -421,10 +418,8 @@ void NRml_TOV_Integrator_2(CCTK_ARGUMENTS){
              
         } 
         if (i == size-1) { 
-            CCTK_VINFO("FINAL: rSchw:,\t%15.14e,\t",current_position);
+            CCTK_INFO("Finished Integration!");
             CCTK_VINFO("FINAL: Mass :,\t%15.14e,\t",y[2]);
-            CCTK_VINFO("FINAL: Nu   :,\t%15.14e,\t",y[1]);
-            CCTK_VINFO("FINAL: rbar :,\t%15.14e,\t",y[3]);
         }
     }
 
