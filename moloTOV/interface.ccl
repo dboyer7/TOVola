@@ -1,4 +1,4 @@
-implements: NRml_TOV_ET
+implements: moloTOV
 inherits: GRHayLib, ADMBase, HydroBase, Grid
 
 public:

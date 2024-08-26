@@ -1,6 +1,6 @@
-if (CCTK_Equals(initial_data, "NRml"))
+if (CCTK_Equals(initial_data, "moloTOV"))
 {
-	SCHEDULE GROUP NRml_TOV_Grid IN HydroBase_Initial
+	SCHEDULE GROUP moloTOV_TOV_Grid IN HydroBase_Initial
 	{
   	SYNC:ADMBase::metric,ADMBase::curv,ADMBase::lapse,ADMBase::shift
   	SYNC: rho
@@ -10,27 +10,27 @@ if (CCTK_Equals(initial_data, "NRml"))
   	SYNC: w_lorentz
 	} "Group for the TOV initial data"
 
-	SCHEDULE NRml_TOV_Integrator_1 IN NRml_TOV_Grid
+	SCHEDULE moloTOV_TOV_Integrator_1 IN moloTOV_TOV_Grid
 	{
 		LANG: C
 	} "Performs the TOV initial data solution algorithm and counts how many points the solution has."
 
-	SCHEDULE NRml_TOV_Allocate IN NRml_TOV_Grid AFTER NRml_TOV_Integrator_1
+	SCHEDULE moloTOV_TOV_Allocate IN moloTOV_TOV_Grid AFTER moloTOV_TOV_Integrator_1
 	{
 		LANG: C
 	} "Allocates memory to the globals"
 
-	SCHEDULE NRml_TOV_Integrator_2 IN NRml_TOV_Grid AFTER NRml_TOV_Allocate
+	SCHEDULE moloTOV_TOV_Integrator_2 IN moloTOV_TOV_Grid AFTER moloTOV_TOV_Allocate
 	{
 		LANG: C
 	} "Performs the TOV initial data solution again, and saves to allocated memory."
 
-	SCHEDULE NRml_interp_Driver IN NRml_TOV_Grid AFTER NRml_TOV_Integrator_2
+	SCHEDULE moloTOV_interp_Driver IN moloTOV_TOV_Grid AFTER moloTOV_TOV_Integrator_2
 	{
 		LANG:C
 	} "Adjusts raw TOV data and interpolates results to CCTK grid"
 
-	SCHEDULE NRml_TOV_Cleanup IN NRml_TOV_Grid AFTER NRml_interp_Driver
+	SCHEDULE moloTOV_TOV_Cleanup IN moloTOV_TOV_Grid AFTER moloTOV_interp_Driver
 	{
 		LANG: C
 	} "Frees the globals."
