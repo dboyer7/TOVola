@@ -1,3 +1,0 @@
-SRCS = NRml_TOV_Driver.c
-
-SUBDIRS = 

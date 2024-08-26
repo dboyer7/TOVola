@@ -1,0 +1,55 @@
+Cactus Code Thorn moloTOV
+Author(s)     : David Boyer
+Note          : This code uses GSL as the heart ODE solver 
+		and uses GRHayLib thorn to store EOS data.
+Maintainer(s) : David Boyer
+License       : BSD-2
+--------------------------------------------------------------------------
+
+==========
+1. Purpose
+==========
+
+moloTOV is an Einstein Toolkit thorn that solves the TOV equations, or the equations 
+of hydrostatic equilibrium for spherically symmetric static stars, specifically 
+Neutron stars. It was designed for straightforward use and allow for multiple
+types of EOS.
+
+==========
+2. Support
+==========
+
+moloTOV supports three types of EOS: Simple Polytrope, Piecewise Polytrope, 
+and Tabulated EOS.
+
+At this time, moloTOV only allows two adaptive ODE methods from GSL: 
+RK4(5) and DP7(8). GSL allows for more methods, both adaptive and non-adaptive, 
+but the two I listed felt sufficient enough.
+
+All these choices can be made in the parfile. No touching the src code is
+necessary (as it should). For examples of using each EOS type, see the par directory.
+
+==========
+3. Output
+==========
+
+You can output via ascii data from the toolkit. See the example parfiles for more details.
+
+==========
+4. Testing
+==========
+
+This code has been tested against both the NRpy generated TOV solver and 
+constraint tested using Baikal.
+
+Simple Polytrope: 
+Raw data sits within 10^-12/-13 in relative error with NRpy
+Constraint violation goes down with higher resolved grids
+
+Piecewise Polytrope:
+Raw data sits within 10^-12/-13 in relative error with NRpy
+Constraint violation goes down with higher resolved grids
+
+Tabulated EOS:
+Raw data sits within 10^-8 in relative error with NRpy (Mostly from EOS table interpolation)
+Constraint violation goes down with higher resolved grids (to interpolation error)
