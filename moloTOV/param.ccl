@@ -1,4 +1,4 @@
-#Parameters for moloTOV
+#Parameters for TOVola
 
 #################################################################################################################
 #Extends
@@ -7,49 +7,49 @@ shares:HydroBase
 
 EXTENDS KEYWORD initial_hydro
 {
-  "moloTOV" :: "TOV star initial hydrobase variables"
+  "TOVola" :: "TOV star initial hydrobase variables"
 }
 
 shares:admbase
 
 EXTENDS KEYWORD initial_data
 {
-  "moloTOV" :: "TOV star initial metric"
+  "TOVola" :: "TOV star initial metric"
 }
 
 EXTENDS KEYWORD initial_lapse
 {
-  "moloTOV" :: "TOV star initial lapse; isotropic"
+  "TOVola" :: "TOV star initial lapse; isotropic"
 }
 
 EXTENDS KEYWORD initial_shift
 {
-  "moloTOV" :: "TOV star initial shift"
+  "TOVola" :: "TOV star initial shift"
 }
 #################################################################################################################
 
 
 #################################################################################################################
-#Parameters for moloTOV: TOV parameters + miscellaneous
+#Parameters for TOVola: TOV parameters + miscellaneous
 #################################################################################################################
 USES KEYWORD metric_type
 
-CCTK_INT moloTOV_Interpolation_Stencil "Stencil Size for Interpollator to Grid"
+CCTK_INT TOVola_Interpolation_Stencil "Stencil Size for Interpollator to Grid"
 {
 	1:* :: "Minimum stencil of 1"
 } 12
 
-CCTK_REAL moloTOV_Tin "Beta Equilibrium Temperature"
+CCTK_REAL TOVola_Tin "Beta Equilibrium Temperature"
 {
 	0.0:* :: "Must be Positive"
 } 1.0e-2
 
-CCTK_REAL moloTOV_central_baryon_density "What's the initial baryon density? (Used to calculate initial pressure)."
+CCTK_REAL TOVola_central_baryon_density "What's the initial baryon density? (Used to calculate initial pressure)."
 {
 	0.0:* :: "Must be Positive"
 } 0.129285
 
-STRING moloTOV_EOS_type "What EOS type are you using?"
+STRING TOVola_EOS_type "What EOS type are you using?"
 {
 	"Simple" :: "Simple Polytrope"
 	"Piecewise" :: "Piecewise Polytrope"
@@ -59,36 +59,36 @@ STRING moloTOV_EOS_type "What EOS type are you using?"
 
 
 #################################################################################################################
-#Parameters for moloTOV: ODE Method and Parameters
+#Parameters for TOVola: ODE Method and Parameters
 #################################################################################################################
-CCTK_REAL moloTOV_step "Initial Step Size"
+CCTK_REAL TOVola_step "Initial Step Size"
 {
 	0.0:* :: "Must be Positive"
 } 1.0e-5
 
-CCTK_INT moloTOV_size "Maximum number of steps"
+CCTK_INT TOVola_size "Maximum number of steps"
 {
 	1:* :: "Minimum of 1 step"
 } 100000000
 
 #Only allowing these two methods right now. I can add a few more if there is a demand.
-STRING moloTOV_ODE_method "What type of method are we using (More Methods can be added if there is demand)"
+STRING TOVola_ODE_method "What type of method are we using (More Methods can be added if there is demand)"
 {
 	"ARKF" :: "Adaptive Runge-Kutta-Fehlberg (RK4(5))"
 	"ADP8" :: "Adaptive Dormand-Prince Eigth Order (DP7(8))"
 } "ARKF"
 
-CCTK_REAL moloTOV_error_limit "Limiting factor of the error"
+CCTK_REAL TOVola_error_limit "Limiting factor of the error"
 {
 	0.0:* :: "Must be Positive"
 } 1.0e-8
 
-CCTK_REAL moloTOV_absolute_max_step "Biggest possible step size."
+CCTK_REAL TOVola_absolute_max_step "Biggest possible step size."
 {
   0.0:* :: "Must be positive"
 } 1.0e-1
 
-CCTK_REAL moloTOV_absolute_min_step "Smallest possible step size"
+CCTK_REAL TOVola_absolute_min_step "Smallest possible step size"
 {
   0.0:* :: "Must be positive"
 } 1.0e-8
@@ -98,7 +98,7 @@ CCTK_REAL moloTOV_absolute_min_step "Smallest possible step size"
 #################################################################################################################
 #Populate Timelevels
 #################################################################################################################
-CCTK_INT moloTOV_TOV_Populate_Timelevels "Populate that amount of timelevels (Based on original ET TOVSolver)" STEERABLE=always
+CCTK_INT TOVola_TOV_Populate_Timelevels "Populate that amount of timelevels (Based on original ET TOVSolver)" STEERABLE=always
 {
   1:3 :: "1 (default) to 3"
 } 1

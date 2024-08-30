@@ -1,4 +1,4 @@
-Cactus Code Thorn moloTOV
+Cactus Code Thorn TOVola
 Author(s)     : David Boyer
 Note          : This code uses GSL as the heart ODE solver 
 		and uses GRHayLib thorn to store EOS data.
@@ -10,7 +10,7 @@ License       : BSD-2
 1. Purpose
 ==========
 
-moloTOV is an Einstein Toolkit thorn that solves the TOV equations, or the equations 
+TOVola is an Einstein Toolkit thorn that solves the TOV equations, or the equations 
 of hydrostatic equilibrium for spherically symmetric static stars, specifically 
 Neutron stars. It was designed for straightforward use and allow for multiple
 types of EOS.
@@ -19,10 +19,10 @@ types of EOS.
 2. Support
 ==========
 
-moloTOV supports three types of EOS: Simple Polytrope, Piecewise Polytrope, 
+TOVola supports three types of EOS: Simple Polytrope, Piecewise Polytrope, 
 and Tabulated EOS.
 
-At this time, moloTOV only allows two adaptive ODE methods from GSL: 
+At this time, TOVola only allows two adaptive ODE methods from GSL: 
 RK4(5) and DP7(8). GSL allows for more methods, both adaptive and non-adaptive, 
 but the two I listed felt sufficient enough.
 

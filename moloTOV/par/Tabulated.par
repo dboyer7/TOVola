@@ -1,5 +1,5 @@
 ############################################
-#Example parfile moloTOV
+#Example parfile TOVola
 #Tabulated EOS
 ############################################
 
@@ -9,7 +9,7 @@
 ActiveThorns = "CartGrid3D CoordBase"
 ActiveThorns = "Carpet InitBase"
 ActiveThorns = "ADMBase HydroBase"
-ActiveThorns = "moloTOV"
+ActiveThorns = "TOVola"
 ActiveThorns = "GRHayLib GRHayLHD GRHayLID"
 ActiveThorns = "CarpetSlab CarpetReduce CarpetIOASCII CarpetIOBasic SymBase"
 
@@ -24,20 +24,20 @@ TmunuBase::stress_energy_at_RHS  = yes
 TmunuBase::timelevels            =  1
 TmunuBase::prolongation_type     = none
 
-#---------moloTOV---------
-moloTOV::moloTOV_step = 1.0e-5
-moloTOV::moloTOV_size = 100000000
-moloTOV::moloTOV_Interpolation_Stencil = 8
-moloTOV::moloTOV_Tin = 1.0e-2
-moloTOV::moloTOV_ODE_method = "ARKF"
-moloTOV::moloTOV_central_baryon_density = 1.58e-3
-moloTOV::moloTOV_error_limit = 1.0e-8
-moloTOV::moloTOV_EOS_type = "Tabulated"
-moloTOV::moloTOV_absolute_max_step = 1.0e-1
-moloTOV::moloTOV_absolute_min_step = 1.0e-8
+#---------TOVola---------
+TOVola::TOVola_step = 1.0e-5
+TOVola::TOVola_size = 100000000
+TOVola::TOVola_Interpolation_Stencil = 8
+TOVola::TOVola_Tin = 1.0e-2
+TOVola::TOVola_ODE_method = "ARKF"
+TOVola::TOVola_central_baryon_density = 1.58e-3
+TOVola::TOVola_error_limit = 1.0e-8
+TOVola::TOVola_EOS_type = "Tabulated"
+TOVola::TOVola_absolute_max_step = 1.0e-1
+TOVola::TOVola_absolute_min_step = 1.0e-8
 
 #---------HydroBase---------
-HydroBase::initial_hydro       = "moloTOV"
+HydroBase::initial_hydro       = "TOVola"
 HydroBase::initial_Y_e         = "GRHayLID"
 HydroBase::initial_temperature = "GRHayLID"
 HydroBase::initial_entropy     = "GRHayLID"
@@ -48,9 +48,9 @@ HydroBase::prolongation_type   = "none"
 HydroBase::timelevels          = 3
 
 #---------ADMBase---------
-ADMBase::initial_data            = "moloTOV"
-ADMBase::initial_lapse           = "moloTOV"
-ADMBase::initial_shift           = "moloTOV"
+ADMBase::initial_data            = "TOVola"
+ADMBase::initial_lapse           = "TOVola"
+ADMBase::initial_shift           = "TOVola"
 ADMBase::initial_dtlapse         = "zero"
 ADMBase::initial_dtshift         = "zero"
 

@@ -10,7 +10,7 @@
 #include <cctk_Arguments.h>
 #include <cctk_Parameters.h>
 
-// This is moloTOV's ODE functions for setting up the ODE system in GSL.
+// This is TOVola's ODE functions for setting up the ODE system in GSL.
 // There are also additional function definitions for an exception handler and termination condition
 // When going through the integration.
 
@@ -31,29 +31,29 @@ struct constant_parameters {
 //Prototypes
 
 //An exception handler, in case numerical error causes pressure to go negative.
-void moloTOV_exception_handler(double x, double y[]); 
+void TOVola_exception_handler(double x, double y[]); 
 
 //Termination condition to end the integration
-int moloTOV_do_we_terminate(double x, double y[], struct constant_parameters *params); 
+int TOVola_do_we_terminate(double x, double y[], struct constant_parameters *params); 
 
 //Function to evaluate rho_baryon and rho_energy, as well as epsilon. Values required for the TOV.
-void moloTOV_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params);
+void TOVola_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params);
 
 //The function the actually holds the TOV equations for GSL
-int moloTOV_ODE(double x, const double y[], double dydx[], void *params);
+int TOVola_ODE(double x, const double y[], double dydx[], void *params);
 
 //Empty function. GSL requires and jacobian to setup, but it is not neccessary for the TOV solution. Can just leave empty.
-int moloTOV_jacobian_placeholder(double t, const double y[], double *dfdy, double dfdt[], void *params);
+int TOVola_jacobian_placeholder(double t, const double y[], double *dfdy, double dfdt[], void *params);
 
 //Calculate initial pressure to get the solution rolling
-void moloTOV_get_initial_condition(double y[], struct constant_parameters*params);
+void TOVola_get_initial_condition(double y[], struct constant_parameters*params);
 
 //Save rho_baryon and rho_energy to memory for later use.
-void moloTOV_assign_constants(double c[], struct constant_parameters *params);
+void TOVola_assign_constants(double c[], struct constant_parameters *params);
 
 
 
-void moloTOV_exception_handler(double x, double y[])
+void TOVola_exception_handler(double x, double y[])
 {
 //Just a check to make sure pressure doesn't accidently goes negative do to numerical roundoff error.
 //Neccessary the closer you get to the surface and pressure goes to zero.
@@ -62,10 +62,10 @@ void moloTOV_exception_handler(double x, double y[])
     } 
 }
 
-int moloTOV_do_we_terminate(double x, double y[], struct constant_parameters *params)
+int TOVola_do_we_terminate(double x, double y[], struct constant_parameters *params)
 {
   DECLARE_CCTK_PARAMETERS
-  if (CCTK_EQUALS("Tabulated",moloTOV_EOS_type)){
+  if (CCTK_EQUALS("Tabulated",TOVola_EOS_type)){
   	const CCTK_REAL PMin = exp(ghl_eos->lp_of_lr[0]); //PMin is not zero on the table, so we don't want to exceed table limits
   	if (y[0] <= PMin){
   		return 1;
@@ -79,12 +79,12 @@ int moloTOV_do_we_terminate(double x, double y[], struct constant_parameters *pa
     // return 1; for termination.
 }
 
-void moloTOV_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params)
+void TOVola_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params)
 {
 
   DECLARE_CCTK_PARAMETERS
   //IF SIMPLE POLYTROPE
-  if (CCTK_EQUALS("Simple",moloTOV_EOS_type)){
+  if (CCTK_EQUALS("Simple",TOVola_EOS_type)){
     //Declare EOS info
     double aK;
     double aGamma;
@@ -100,7 +100,7 @@ void moloTOV_evaluate_rho_and_eps(double x, const double y[], struct constant_pa
     params->rho_energy = params->rho_baryon*(1.0+eps);}
 
   //IF PIECEWISE POLYTROPE
-  else if (CCTK_EQUALS("Piecewise",moloTOV_EOS_type)){
+  else if (CCTK_EQUALS("Piecewise",TOVola_EOS_type)){
     //Basically identical to Simple Polytrope, you just have more regions.
     double aK;
     double aGamma;
@@ -116,7 +116,7 @@ void moloTOV_evaluate_rho_and_eps(double x, const double y[], struct constant_pa
   }
 
   //IF TABULATED EOS
-  else if (CCTK_EQUALS("Tabulated",moloTOV_EOS_type)){
+  else if (CCTK_EQUALS("Tabulated",TOVola_EOS_type)){
     const CCTK_REAL PMin = exp(ghl_eos->lp_of_lr[0]);
     if(y[0] > PMin){ //Assure you are not exceeding table bounds
       //Use GRHayL function to find our current rho_baryon and rho_energy on the table.
@@ -132,11 +132,11 @@ void moloTOV_evaluate_rho_and_eps(double x, const double y[], struct constant_pa
     
 }
 
-int moloTOV_ODE(double x, const double y[], double dydx[], void *params)
+int TOVola_ODE(double x, const double y[], double dydx[], void *params)
 {
     //Need to have the correct value for rho_energy in the TOVs.
     //Only assigned later when the step has gone all the way through.
-    moloTOV_evaluate_rho_and_eps(x,y,params);
+    TOVola_evaluate_rho_and_eps(x,y,params);
 
     // Dereference the struct to use rho_energy
     double rho_energy = (*(struct constant_parameters*)params).rho_energy;
@@ -163,20 +163,20 @@ int moloTOV_ODE(double x, const double y[], double dydx[], void *params)
     return 0;
 }
 
-int moloTOV_jacobian_placeholder(double x, const double y[], double *dfdy, double dydx[], void *params)
+int TOVola_jacobian_placeholder(double x, const double y[], double *dfdy, double dydx[], void *params)
 {
 
-  //Jacobian isn't necessary for moloTOV to run properly, but GSL wants SOME function
+  //Jacobian isn't necessary for TOVola to run properly, but GSL wants SOME function
   //Leave blank, doesn't affect final results
   
   return 0;
 }
 
-void moloTOV_get_initial_condition (double y[], struct constant_parameters *params)
+void TOVola_get_initial_condition (double y[], struct constant_parameters *params)
 {
   DECLARE_CCTK_PARAMETERS
   //IF SIMPLE POLYTROPE
-  if (CCTK_EQUALS("Simple",moloTOV_EOS_type)){
+  if (CCTK_EQUALS("Simple",TOVola_EOS_type)){
     //Declare EOS info
     double aK;
     double aGamma;
@@ -196,7 +196,7 @@ void moloTOV_get_initial_condition (double y[], struct constant_parameters *para
   }
 
   //IF PIECEWISE POLYTROPE
-  else if (CCTK_EQUALS("Piecewise",moloTOV_EOS_type)){
+  else if (CCTK_EQUALS("Piecewise",TOVola_EOS_type)){
     //Declare EOS info
     double aK;
     double aGamma;
@@ -218,7 +218,7 @@ void moloTOV_get_initial_condition (double y[], struct constant_parameters *para
   }
 
   //IF TABULATED EOS
-  else if (CCTK_EQUALS("Tabulated",moloTOV_EOS_type)){
+  else if (CCTK_EQUALS("Tabulated",TOVola_EOS_type)){
     //Use GRHayL to find initial pressure on the table
     double rhoC_baryon = params->rhoCentral_baryon;
     y[0] = ghl_tabulated_compute_P_from_rho(ghl_eos, rhoC_baryon);
@@ -235,7 +235,7 @@ void moloTOV_get_initial_condition (double y[], struct constant_parameters *para
   CCTK_VINFO("Got Initial Conditions!");
 }
 
-void moloTOV_assign_constants (double c[], struct constant_parameters *params)
+void TOVola_assign_constants (double c[], struct constant_parameters *params)
 {
     //This is where we actually assign the densities
     c[0] = params->rho_energy; // Total energy density.
@@ -244,5 +244,5 @@ void moloTOV_assign_constants (double c[], struct constant_parameters *params)
       c[0]=0;}
 }
 
-//moloTOV: by David Boyer
+//TOVola: by David Boyer
 //auxillary functions for solving the ODE.
