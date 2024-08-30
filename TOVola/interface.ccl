@@ -1,4 +1,4 @@
-implements: moloTOV
+implements: TOVola
 inherits: GRHayLib, ADMBase, HydroBase, Grid
 
 public:

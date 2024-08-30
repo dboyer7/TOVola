@@ -1,6 +1,6 @@
 ############################################
-#Example parfile moloTOV
-#Piecewise EOS
+#Example parfile TOVola
+#Tabulated EOS
 ############################################
 
 #---------ActiveThorns---------
@@ -9,7 +9,7 @@
 ActiveThorns = "CartGrid3D CoordBase"
 ActiveThorns = "Carpet InitBase"
 ActiveThorns = "ADMBase HydroBase"
-ActiveThorns = "moloTOV"
+ActiveThorns = "TOVola"
 ActiveThorns = "GRHayLib GRHayLHD GRHayLID"
 ActiveThorns = "CarpetSlab CarpetReduce CarpetIOASCII CarpetIOBasic SymBase"
 
@@ -24,21 +24,33 @@ TmunuBase::stress_energy_at_RHS  = yes
 TmunuBase::timelevels            =  1
 TmunuBase::prolongation_type     = none
 
-#---------moloTOV---------
-moloTOV::moloTOV_step = 1.0e-5
-moloTOV::moloTOV_size = 100000000
-moloTOV::moloTOV_Interpolation_Stencil = 12
-moloTOV::moloTOV_ODE_method = "ADP8"
-moloTOV::moloTOV_central_baryon_density = 1.58e-3
-moloTOV::moloTOV_error_limit = 1.0e-8
-moloTOV::moloTOV_EOS_type = "Piecewise"
-moloTOV::moloTOV_absolute_max_step = 1.0e-1
-moloTOV::moloTOV_absolute_min_step = 1.0e-8
+#---------TOVola---------
+TOVola::TOVola_step = 1.0e-5
+TOVola::TOVola_size = 100000000
+TOVola::TOVola_Interpolation_Stencil = 8
+TOVola::TOVola_Tin = 1.0e-2
+TOVola::TOVola_ODE_method = "ARKF"
+TOVola::TOVola_central_baryon_density = 1.58e-3
+TOVola::TOVola_error_limit = 1.0e-8
+TOVola::TOVola_EOS_type = "Tabulated"
+TOVola::TOVola_absolute_max_step = 1.0e-1
+TOVola::TOVola_absolute_min_step = 1.0e-8
+
+#---------HydroBase---------
+HydroBase::initial_hydro       = "TOVola"
+HydroBase::initial_Y_e         = "GRHayLID"
+HydroBase::initial_temperature = "GRHayLID"
+HydroBase::initial_entropy     = "GRHayLID"
+HydroBase::initial_Bvec        = "zero"
+HydroBase::initial_Avec        = "zero"
+HydroBase::initial_Aphi        = "zero"
+HydroBase::prolongation_type   = "none"
+HydroBase::timelevels          = 3
 
 #---------ADMBase---------
-ADMBase::initial_data            = "moloTOV"
-ADMBase::initial_lapse           = "moloTOV"
-ADMBase::initial_shift           = "moloTOV"
+ADMBase::initial_data            = "TOVola"
+ADMBase::initial_lapse           = "TOVola"
+ADMBase::initial_shift           = "TOVola"
 ADMBase::initial_dtlapse         = "zero"
 ADMBase::initial_dtshift         = "zero"
 
@@ -77,26 +89,22 @@ driver::ghost_size   = 3
 cactus::cctk_itlast   =       0
 
 #---------GRHayL---------
-GRHayLib::EOS_type = "Hybrid"
-GRHayLib::neos = 7
-GRHayLib::rho_b_atm = 1.0e-13
-GRHayLib::Gamma_th = 2.0
-GRHayLib::Gamma_ppoly_in[0] = 1.58425
-GRHayLib::Gamma_ppoly_in[1] = 1.28733
-GRHayLib::Gamma_ppoly_in[2] = 0.62223
-GRHayLib::Gamma_ppoly_in[3] = 1.35692
-GRHayLib::Gamma_ppoly_in[4] = 3.005
-GRHayLib::Gamma_ppoly_in[5] = 2.988
-GRHayLib::Gamma_ppoly_in[6] = 2.851
-GRHayLib::rho_ppoly_in[0] = 3.95143746008251e-11
-GRHayLib::rho_ppoly_in[1] = 6.126433097526977e-07
-GRHayLib::rho_ppoly_in[2] = 4.254975682734708e-06
-GRHayLib::rho_ppoly_in[3] = 0.0002367785968890901
-GRHayLib::rho_ppoly_in[4] = 0.0008115303644041096
-GRHayLib::rho_ppoly_in[5] = 0.001619215953548485
-GRHayLib::k_ppoly0 = 168.57487497864867
+GRHayLib::con2prim_routine = "Palenzuela1D"
+#Even though we aren't using c2p, it does need to be set to something compatible with tabulated EOS
+GRHayLib::EOS_type = "Tabulated"
+GRHayLib::EOS_tablepath =  "/home/boye4060/projects/Tables/SLy4_3335_rho391_temp163_ye66_adjusted.h5"
+#Replace this with your table file path.
+GRHayLib::Y_e_atm = 1.0e-2
+GRHayLib::Y_e_min = -1.0
+GRHayLib::Y_e_max = 1.0
+GRHayLib::T_atm = 1.0e-2
+GRHayLib::T_min = -1.0
+GRHayLib::T_max = 1.0e10
+GRHayLib::rho_b_atm = 1.0e-12
 GRHayLib::evolve_temperature = yes
 GRHayLib::evolve_entropy     = no
+GRHayLID::impose_beta_equilibrium = yes
+GRHayLID::beq_temperature         = GRHayLib::T_atm
 
 #---------Output---------
 IO::out_dir			= $parfile
