@@ -1,2 +1,8 @@
 #ignore all backup files
 *~
+
+#ignore all executable files
+*.exe
+
+#ignore all object files
+*.o
