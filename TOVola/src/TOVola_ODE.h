@@ -15,7 +15,7 @@
 // When going through the integration.
 
 //struct to hold information about the EOS
-struct constant_parameters { 
+struct TOVola_parameters { 
     int dimension;
     double rho_energy;
     double rho_baryon;
@@ -34,10 +34,10 @@ struct constant_parameters {
 void TOVola_exception_handler(double x, double y[]); 
 
 //Termination condition to end the integration
-int TOVola_do_we_terminate(double x, double y[], struct constant_parameters *params); 
+int TOVola_do_we_terminate(double x, double y[], struct TOVola_parameters *params); 
 
 //Function to evaluate rho_baryon and rho_energy, as well as epsilon. Values required for the TOV.
-void TOVola_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params);
+void TOVola_evaluate_rho_and_eps(double x, const double y[], struct TOVola_parameters *params);
 
 //The function the actually holds the TOV equations for GSL
 int TOVola_ODE(double x, const double y[], double dydx[], void *params);
@@ -46,10 +46,10 @@ int TOVola_ODE(double x, const double y[], double dydx[], void *params);
 int TOVola_jacobian_placeholder(double t, const double y[], double *dfdy, double dfdt[], void *params);
 
 //Calculate initial pressure to get the solution rolling
-void TOVola_get_initial_condition(double y[], struct constant_parameters*params);
+void TOVola_get_initial_condition(double y[], struct TOVola_parameters*params);
 
 //Save rho_baryon and rho_energy to memory for later use.
-void TOVola_assign_constants(double c[], struct constant_parameters *params);
+void TOVola_assign_constants(double c[], struct TOVola_parameters *params);
 
 
 
@@ -62,7 +62,7 @@ void TOVola_exception_handler(double x, double y[])
     } 
 }
 
-int TOVola_do_we_terminate(double x, double y[], struct constant_parameters *params)
+int TOVola_do_we_terminate(double x, double y[], struct TOVola_parameters *params)
 {
   DECLARE_CCTK_PARAMETERS
   if (CCTK_EQUALS("Tabulated",TOVola_EOS_type)){
@@ -79,7 +79,7 @@ int TOVola_do_we_terminate(double x, double y[], struct constant_parameters *par
     // return 1; for termination.
 }
 
-void TOVola_evaluate_rho_and_eps(double x, const double y[], struct constant_parameters *params)
+void TOVola_evaluate_rho_and_eps(double x, const double y[], struct TOVola_parameters *params)
 {
 
   DECLARE_CCTK_PARAMETERS
@@ -139,7 +139,7 @@ int TOVola_ODE(double x, const double y[], double dydx[], void *params)
     TOVola_evaluate_rho_and_eps(x,y,params);
 
     // Dereference the struct to use rho_energy
-    double rho_energy = (*(struct constant_parameters*)params).rho_energy;
+    double rho_energy = (*(struct TOVola_parameters*)params).rho_energy;
 
     if (isnan(rho_energy)==1){
       //Outside the star gives nans from the pow function, but we know they should be zeros.
@@ -172,7 +172,7 @@ int TOVola_jacobian_placeholder(double x, const double y[], double *dfdy, double
   return 0;
 }
 
-void TOVola_get_initial_condition (double y[], struct constant_parameters *params)
+void TOVola_get_initial_condition (double y[], struct TOVola_parameters *params)
 {
   DECLARE_CCTK_PARAMETERS
   //IF SIMPLE POLYTROPE
@@ -235,7 +235,7 @@ void TOVola_get_initial_condition (double y[], struct constant_parameters *param
   CCTK_VINFO("Got Initial Conditions!");
 }
 
-void TOVola_assign_constants (double c[], struct constant_parameters *params)
+void TOVola_assign_constants (double c[], struct TOVola_parameters *params)
 {
     //This is where we actually assign the densities
     c[0] = params->rho_energy; // Total energy density.
