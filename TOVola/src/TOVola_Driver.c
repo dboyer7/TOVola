@@ -78,13 +78,13 @@ void TOVola_TOV_Integrator_1(CCTK_ARGUMENTS){
     //Create the GSL struct for the TOV ODE system
     int TOVola_number_of_equations = 4; //P,M,nu,rbar
     int TOVola_number_of_constants = 2; //rho_energy, rho_baryon
-    struct constant_parameters TOVola_cp = { 
+    struct TOVola_parameters TOVola_theParams = { 
       .dimension = TOVola_number_of_constants,
     };
-    TOVola_cp.rhoCentral_baryon = TOVola_central_baryon_density;
+    TOVola_theParams.rhoCentral_baryon = TOVola_central_baryon_density;
     
     //Declare the GSL ODE system and Driver.
-    gsl_odeiv2_system TOVola_system = {TOVola_ODE,TOVola_jacobian_placeholder,TOVola_number_of_equations,&TOVola_cp};
+    gsl_odeiv2_system TOVola_system = {TOVola_ODE,TOVola_jacobian_placeholder,TOVola_number_of_equations,&TOVola_theParams};
     gsl_odeiv2_driver * TOVola_d;
     //Set the ODE type (RK4(5) or DP7(8))
     if (CCTK_EQUALS("ARKF",TOVola_ODE_method)) {
@@ -93,8 +93,8 @@ void TOVola_TOV_Integrator_1(CCTK_ARGUMENTS){
        TOVola_d = gsl_odeiv2_driver_alloc_y_new(&TOVola_system, gsl_odeiv2_step_rk8pd, TOVola_step, TOVola_error_limit, TOVola_error_limit);}
     else{
       CCTK_INFO("Invalid Step type. May only use ARKF or ADP8.");
-      CCTK_INFO("Shutting down due to error.\n");
-      exit(1);} 
+      CCTK_ERROR("Shutting down due to error.\n");
+      } 
     
     //Set maximum and minimum step size in adaptive method.
     gsl_odeiv2_driver_set_hmax(TOVola_d, TOVola_absolute_max_step);
@@ -104,8 +104,8 @@ void TOVola_TOV_Integrator_1(CCTK_ARGUMENTS){
     double TOVola_y[TOVola_number_of_equations];
     double TOVola_c[TOVola_number_of_constants];
     
-    TOVola_get_initial_condition(TOVola_y,&TOVola_cp); //Get initial conditions
-    TOVola_assign_constants(TOVola_c,&TOVola_cp); //Set initial rho_baryon and rho_energy
+    TOVola_get_initial_condition(TOVola_y,&TOVola_theParams); //Get initial conditions
+    TOVola_assign_constants(TOVola_c,&TOVola_theParams); //Set initial rho_baryon and rho_energy
     
     TOVola_Numpoints++; //First step in the solution: For first integration
 
@@ -114,15 +114,14 @@ void TOVola_TOV_Integrator_1(CCTK_ARGUMENTS){
         
         TOVola_exception_handler(TOVola_current_position,TOVola_y); //Check to make sure pressure didn't go negative near the surface (numerical error check)
         gsl_odeiv2_driver_apply (TOVola_d, &TOVola_current_position, TOVola_current_position+TOVola_step, TOVola_y); //Step through the integration
-
         TOVola_exception_handler(TOVola_current_position,TOVola_y); //Just another check to be sure. Can't be too safe.
-        TOVola_evaluate_rho_and_eps(TOVola_current_position,TOVola_y,&TOVola_cp); //Evaluate rho_baryon and rho_energy at the new location.
-        TOVola_assign_constants(TOVola_c,&TOVola_cp); //Assign rho_baryon and rho_energy.
+        TOVola_evaluate_rho_and_eps(TOVola_current_position,TOVola_y,&TOVola_theParams); //Evaluate rho_baryon and rho_energy at the new location.
+        TOVola_assign_constants(TOVola_c,&TOVola_theParams); //Assign rho_baryon and rho_energy.
     	
     	TOVola_Numpoints++; //Count how much memory is needed for allocation, so we dont waste memory.
 
         //Are we at the surface?
-        if (TOVola_do_we_terminate(TOVola_current_position, TOVola_y, &TOVola_cp) == 1) {
+        if (TOVola_do_we_terminate(TOVola_current_position, TOVola_y, &TOVola_theParams) == 1) {
             i = TOVola_size-1;             
         } 
         if (i == TOVola_size-1) { 
@@ -169,12 +168,12 @@ void TOVola_TOV_Integrator_2(CCTK_ARGUMENTS){
     //Create the GSL struct for the TOV ODE system
     int TOVola_number_of_equations = 4; //P,M,nu,rbar
     int TOVola_number_of_constants = 2; //rho_energy, rho_baryon
-    struct constant_parameters TOVola_cp = { 
+    struct TOVola_parameters TOVola_theParams = { 
       .dimension = TOVola_number_of_constants,
     };
-    TOVola_cp.rhoCentral_baryon = TOVola_central_baryon_density;
+    TOVola_theParams.rhoCentral_baryon = TOVola_central_baryon_density;
     
-    gsl_odeiv2_system TOVola_system = {TOVola_ODE,TOVola_jacobian_placeholder,TOVola_number_of_equations,&TOVola_cp};
+    gsl_odeiv2_system TOVola_system = {TOVola_ODE,TOVola_jacobian_placeholder,TOVola_number_of_equations,&TOVola_theParams};
     gsl_odeiv2_driver * TOVola_d;
     //Set the ODE type (RK4(5) or DP7(8))
     if (CCTK_EQUALS("ARKF",TOVola_ODE_method)) {
@@ -183,8 +182,8 @@ void TOVola_TOV_Integrator_2(CCTK_ARGUMENTS){
        TOVola_d = gsl_odeiv2_driver_alloc_y_new(&TOVola_system, gsl_odeiv2_step_rk8pd, TOVola_step, TOVola_error_limit, TOVola_error_limit);}
     else{
       CCTK_INFO("Invalid Step type. May only use ARKF or ADP8.");
-      CCTK_INFO("Shutting down due to error.\n");
-      exit(1);} 
+      CCTK_ERROR("Shutting down due to error.\n");
+      } 
 
     //Set maximum and minimum step size in adaptive method.
     gsl_odeiv2_driver_set_hmax(TOVola_d, TOVola_absolute_max_step);
@@ -194,8 +193,8 @@ void TOVola_TOV_Integrator_2(CCTK_ARGUMENTS){
     double TOVola_y[TOVola_number_of_equations];
     double TOVola_c[TOVola_number_of_constants];
     
-    TOVola_get_initial_condition(TOVola_y,&TOVola_cp); //Get initial conditions
-    TOVola_assign_constants(TOVola_c,&TOVola_cp); //Set initial rho_baryon and rho_energy
+    TOVola_get_initial_condition(TOVola_y,&TOVola_theParams); //Get initial conditions
+    TOVola_assign_constants(TOVola_c,&TOVola_theParams); //Set initial rho_baryon and rho_energy
 
     //For the Second Integration, we are actually writing the solution to memory
     TOVola_Raw_rSchw[TOVola_this_point] = TOVola_current_position;
@@ -213,8 +212,8 @@ void TOVola_TOV_Integrator_2(CCTK_ARGUMENTS){
         gsl_odeiv2_driver_apply (TOVola_d, &TOVola_current_position, TOVola_current_position+TOVola_step, TOVola_y); //Step through the integration
 
         TOVola_exception_handler(TOVola_current_position,TOVola_y); //Just another check to be sure. Can't be too safe.
-        TOVola_evaluate_rho_and_eps(TOVola_current_position,TOVola_y,&TOVola_cp); //Evaluate rho_baryon and rho_energy at the new location.
-        TOVola_assign_constants(TOVola_c,&TOVola_cp); //Assign rho_baryon and rho_energy.
+        TOVola_evaluate_rho_and_eps(TOVola_current_position,TOVola_y,&TOVola_theParams); //Evaluate rho_baryon and rho_energy at the new location.
+        TOVola_assign_constants(TOVola_c,&TOVola_theParams); //Assign rho_baryon and rho_energy.
 
         //Save the raw data to memory
 	TOVola_Raw_rSchw[TOVola_this_point] = TOVola_current_position;
@@ -227,7 +226,7 @@ void TOVola_TOV_Integrator_2(CCTK_ARGUMENTS){
         TOVola_this_point++;
 
         //Are we at the surface?
-        if (TOVola_do_we_terminate(TOVola_current_position, TOVola_y, &TOVola_cp) == 1) {
+        if (TOVola_do_we_terminate(TOVola_current_position, TOVola_y, &TOVola_theParams) == 1) {
             i = TOVola_size-1;             
         } 
         if (i == TOVola_size-1) { 
