@@ -25,10 +25,9 @@ TmunuBase::timelevels            =  1
 TmunuBase::prolongation_type     = none
 
 #---------TOVola---------
-TOVola::TOVola_size = 100000000
 TOVola::TOVola_Interpolation_Stencil = 12
 TOVola::TOVola_ODE_method = "ADP8"
-TOVola::TOVola_central_baryon_density = 0.145999611225
+TOVola::TOVola_central_baryon_density = 0.125
 TOVola::TOVola_error_limit = 1.0e-8
 TOVola::TOVola_EOS_type = "Simple"
 

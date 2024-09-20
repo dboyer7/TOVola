@@ -46,13 +46,12 @@ static int TOVola_bisection_idx_finder(const CCTK_REAL rr_iso, const int numpoin
 
 /* Interpolation Function using Lagrange Polynomial */
 static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
-                                      const int interpolation_stencil_size, const int numpoints_arr, const CCTK_REAL *restrict r_Schw_arr,
+                                      const int Interpolation_Stencil, const int Max_Interpolation_Stencil, const int numpoints_arr, const CCTK_REAL *restrict r_Schw_arr,
                                       const CCTK_REAL *restrict rho_energy_arr, const CCTK_REAL *restrict rho_baryon_arr, const CCTK_REAL *restrict P_arr,
                                       const CCTK_REAL *restrict M_arr, const CCTK_REAL *restrict expnu_arr, const CCTK_REAL *restrict exp4phi_arr,
                                       const CCTK_REAL *restrict r_iso_arr, CCTK_REAL *restrict rho_energy, CCTK_REAL *restrict rho_baryon, CCTK_REAL *restrict P,
                                       CCTK_REAL *restrict M, CCTK_REAL *restrict expnu, CCTK_REAL *restrict exp4phi) {
   
-  DECLARE_CCTK_PARAMETERS	
 	
   const int R_idx = numpoints_arr - 1;
   const CCTK_REAL M_star = M_arr[R_idx];
@@ -67,31 +66,31 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
     int idx_mid = TOVola_bisection_idx_finder(rr_iso, numpoints_arr, r_iso_arr);
 
     /* Use standard library functions instead of redefining macros */
-    int idxmin = MAX(0, idx_mid - TOVola_Interpolation_Stencil / 2 - 1);
+    int idxmin = MAX(0, idx_mid - Interpolation_Stencil / 2 - 1);
 
     // -= Do not allow the interpolation stencil to cross the star's surface =-
     // max index is when idxmin + (TOVola_Interpolation_stencil-1) = R_idx
     //  -> idxmin at most can be R_idx - TOVola_Interpolation_stencil + 1
-    idxmin = MIN(idxmin, R_idx - TOVola_Interpolation_Stencil + 1);
+    idxmin = MIN(idxmin, R_idx - Interpolation_Stencil + 1);
 
-    // Ensure that TOVola_Interpolation_Stencil does not exceed the maximum
-    if (TOVola_Interpolation_Stencil > TOVola_Max_Interpolation_Stencil) {
+    // Ensure that Interpolation_Stencil does not exceed the maximum
+    if (Interpolation_Stencil > Max_Interpolation_Stencil) {
       CCTK_ERROR("Interpolation stencil size exceeds maximum allowed.\n");
     }
 
     // Now perform the Lagrange polynomial interpolation:
 
     // First compute the interpolation coefficients:
-    CCTK_REAL r_iso_sample[TOVola_Max_Interpolation_Stencil];
-    for (int i = idxmin; i < idxmin + TOVola_Interpolation_Stencil; i++) {
+    CCTK_REAL r_iso_sample[Max_Interpolation_Stencil];
+    for (int i = idxmin; i < idxmin + Interpolation_Stencil; i++) {
       //if(i < 0 || i >= R_idx-1) { fprintf(stderr, "ERROR!\n"); exit(1); }
       r_iso_sample[i - idxmin] = r_iso_arr[i];
     }
-    CCTK_REAL l_i_of_r[TOVola_Max_Interpolation_Stencil];
-    for (int i = 0; i < TOVola_Interpolation_Stencil; i++) {
+    CCTK_REAL l_i_of_r[Max_Interpolation_Stencil];
+    for (int i = 0; i < Interpolation_Stencil; i++) {
       CCTK_REAL numer = 1.0;
       CCTK_REAL denom = 1.0;
-      for (int j = 0; j < TOVola_Interpolation_Stencil; j++) {
+      for (int j = 0; j < Interpolation_Stencil; j++) {
         if (j != i) {
           numer *= (rr_iso - r_iso_sample[j]);
           denom *= (r_iso_sample[i] - r_iso_sample[j]);
@@ -108,7 +107,7 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
     *expnu = 0.0;
     *exp4phi = 0.0;
 
-    for (int i = idxmin; i < idxmin + TOVola_Interpolation_Stencil; i++) {
+    for (int i = idxmin; i < idxmin + Interpolation_Stencil; i++) {
       r_Schw += l_i_of_r[i - idxmin] * r_Schw_arr[i];
       *rho_energy += l_i_of_r[i - idxmin] * rho_energy_arr[i];
       *rho_baryon += l_i_of_r[i - idxmin] * rho_baryon_arr[i];
@@ -131,10 +130,8 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
   //printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e hhhh\n", rr_iso, r_Schw, *rho_energy, *rho_baryon, *P, *M, *expnu, *exp4phi);
 }
 
-void TOVola_interp(CCTK_ARGUMENTS){
+static void TOVola_interp(){
 
-  DECLARE_CCTK_ARGUMENTS
-  DECLARE_CCTK_PARAMETERS
 /*
   const CCTK_REAL x = xCart[0];
   const CCTK_REAL y = xCart[1];
@@ -145,7 +142,7 @@ void TOVola_interp(CCTK_ARGUMENTS){
 
   // Perform pointwise interpolation to radius r using TOVola_ID_persist data
   CCTK_REAL rho_energy_val, rho_baryon_val, P_val, M_val, expnu_val, exp4phi_val;
-  TOVola_TOV_interpolate_1D(r_iso, TOVola_Max_Interpolation_Stencil, TOVola_ID_persist->numpoints_arr,
+  TOVola_TOV_interpolate_1D(r_iso, Interpolation_Stencil, Max_Interpolation_Stencil, TOVola_ID_persist->numpoints_arr,
                             TOVola_ID_persist->r_Schw_arr, TOVola_ID_persist->rho_energy_arr, TOVola_ID_persist->rho_baryon_arr, TOVola_ID_persist->P_arr, TOVola_ID_persist->M_arr,
                             TOVola_ID_persist->expnu_arr, TOVola_ID_persist->exp4phi_arr, TOVola_ID_persist->r_iso_arr, &rho_energy_val, &rho_baryon_val, &P_val, &M_val,
                             &expnu_val, &exp4phi_val);

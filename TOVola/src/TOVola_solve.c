@@ -1,4 +1,6 @@
 #include "GRHayLib.h"
+#include "TOVola_interp.c"
+#include "TOVola_defines.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +18,9 @@
 #define TOVOLA_MASS 2
 #define TOVOLA_R_ISO 3
 
+/* Prototype for TOVola_interp_function, to be used later */
+static void TOVola_interp();
+
 /* Structure to hold raw TOV data */
 typedef struct {
   // Current state variables
@@ -31,28 +36,24 @@ typedef struct {
   CCTK_REAL *restrict nu_arr;
   CCTK_REAL *restrict Iso_r_arr;
   int numels_alloced_TOV_arr;
-
+  ghl_eos_parameters *restrict ghl_eos;
   int numpoints_actually_saved;
+  
+  //Additional declarations, to pass through ETK parameters in parfile
+  CCTK_REAL central_baryon_density;
+  CCTK_REAL initial_ode_step_size;
+  CCTK_REAL error_limit;
+  CCTK_REAL absolute_min_step;
+  CCTK_REAL absolute_max_step;
+  CCTK_REAL Interpolation_Stencil;
+  CCTK_REAL Max_Interpolation_Stencil;
+
 } TOVola_data_struct;
 
 /* Structure to hold TOV data that will become the official ID after normalization */
-typedef struct {
-	CCTK_REAL *restrict r_Schw_arr;
-	CCTK_REAL *restrict rho_energy_arr;
-	CCTK_REAL *restrict rho_baryon_arr;
-	CCTK_REAL *restrict P_arr;
-	CCTK_REAL *restrict M_arr;
-	CCTK_REAL *restrict expnu_arr;
-	CCTK_REAL *restrict r_iso_arr;
-	CCTK_REAL *restrict exp4phi_arr;
-	int numpoints_arr;
-} TOVola_ID_persist_struct;
-
-/*create a global ID_persist to use in the whole code (Needed for interp function)*/
-TOVola_ID_persist_struct *TOVola_ID_persist;
 
 /* Exception handler to prevent negative pressures */
-void TOVola_exception_handler(CCTK_REAL r, CCTK_REAL y[]) {
+static void TOVola_exception_handler(CCTK_REAL r, CCTK_REAL y[]) {
   // Ensure pressure does not become negative due to numerical errors
   if (y[TOVOLA_PRESSURE] < 0) {
     y[TOVOLA_PRESSURE] = 0;
@@ -60,9 +61,8 @@ void TOVola_exception_handler(CCTK_REAL r, CCTK_REAL y[]) {
 }
 
 /* Termination condition for the integration */
-int TOVola_do_we_terminate(CCTK_REAL r, CCTK_REAL y[], TOVola_data_struct *TOVdata) {
+static int TOVola_do_we_terminate(CCTK_REAL r, CCTK_REAL y[], TOVola_data_struct *TOVdata) {
   
-  DECLARE_CCTK_PARAMETERS
   /* if (TOVdata->eos_type == TABULATED_EOS) { */
   /*     // Not implemented in this standalone version */
   /*     // Return 0 to continue integration */
@@ -78,9 +78,8 @@ int TOVola_do_we_terminate(CCTK_REAL r, CCTK_REAL y[], TOVola_data_struct *TOVda
 }
 
 /* Evaluate rho_baryon and rho_energy based on the EOS type */
-void TOVola_evaluate_rho_and_eps(CCTK_REAL r, const CCTK_REAL y[], TOVola_data_struct *TOVdata) {
+static void TOVola_evaluate_rho_and_eps(CCTK_REAL r, const CCTK_REAL y[], TOVola_data_struct *TOVdata) {
   
-  DECLARE_CCTK_PARAMETERS	
   // Simple Polytrope
   /* if (TOVdata->eos_type == SIMPLE_POLYTROPE) { */
   CCTK_REAL aK, aGamma;
@@ -88,10 +87,10 @@ void TOVola_evaluate_rho_and_eps(CCTK_REAL r, const CCTK_REAL y[], TOVola_data_s
   CCTK_REAL eps, aPress;
 
   // Retrieve K and Gamma from GRHayL
-  ghl_hybrid_get_K_and_Gamma(ghl_eos, aRho_baryon, &aK, &aGamma);
+  ghl_hybrid_get_K_and_Gamma(TOVdata->ghl_eos, aRho_baryon, &aK, &aGamma);
   TOVdata->rho_baryon = pow(y[TOVOLA_PRESSURE] / aK, 1.0 / aGamma);
   aRho_baryon = TOVdata->rho_baryon;
-  ghl_hybrid_compute_P_cold_and_eps_cold(ghl_eos, aRho_baryon, &aPress, &eps);
+  ghl_hybrid_compute_P_cold_and_eps_cold(TOVdata->ghl_eos, aRho_baryon, &aPress, &eps);
   TOVdata->rho_energy = TOVdata->rho_baryon * (1.0 + eps);
   /* } */
   /*
@@ -112,7 +111,7 @@ void TOVola_evaluate_rho_and_eps(CCTK_REAL r, const CCTK_REAL y[], TOVola_data_s
 }
 
 /* The main ODE function for GSL */
-int TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw[], void *params) {
+static int TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw[], void *params) {
   // Cast params to TOVdata_struct
   TOVola_data_struct *TOVdata = (TOVola_data_struct *)params;
 
@@ -155,23 +154,22 @@ int TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw[], voi
 }
 
 /* Placeholder Jacobian function required by GSL */
-int TOVola_jacobian_placeholder(CCTK_REAL t, const CCTK_REAL y[], CCTK_REAL *restrict dfdy, CCTK_REAL dfdt[], void *params) {
+static int TOVola_jacobian_placeholder(CCTK_REAL t, const CCTK_REAL y[], CCTK_REAL *restrict dfdy, CCTK_REAL dfdt[], void *params) {
   // Jacobian is not necessary for the TOV solution, but GSL requires some
   // function Leave it empty as it does not affect the final results
   return GSL_SUCCESS;
 }
 
 /* Initialize the ODE variables */
-void TOVola_get_initial_condition(CCTK_REAL y[], TOVola_data_struct *TOVdata) {
+static void TOVola_get_initial_condition(CCTK_REAL y[], TOVola_data_struct *TOVdata) {
   
-  DECLARE_CCTK_PARAMETERS	
   // Simple Polytrope
   /* if (TOVdata->eos_type == SIMPLE_POLYTROPE) { */
   CCTK_REAL aK, aGamma;
-  CCTK_REAL rhoC_baryon = TOVola_central_baryon_density;
+  CCTK_REAL rhoC_baryon = TOVdata->central_baryon_density;
 
   // Retrieve K and Gamma from GRHayL
-  ghl_hybrid_get_K_and_Gamma(ghl_eos, rhoC_baryon, &aK, &aGamma);
+  ghl_hybrid_get_K_and_Gamma(TOVdata->ghl_eos, rhoC_baryon, &aK, &aGamma);
   y[TOVOLA_PRESSURE] = aK * pow(rhoC_baryon, aGamma); // Pressure
   y[TOVOLA_NU] = 0.0;                                 // nu
   y[TOVOLA_MASS] = 0.0;                               // Mass
@@ -203,7 +201,7 @@ void TOVola_get_initial_condition(CCTK_REAL y[], TOVola_data_struct *TOVdata) {
 }
 
 /* Assign constants after each integration step */
-void TOVola_assign_constants(CCTK_REAL c[], TOVola_data_struct *TOVdata) {
+static void TOVola_assign_constants(CCTK_REAL c[], TOVola_data_struct *TOVdata) {
   // Assign the densities
   c[0] = TOVdata->rho_energy; // Total energy density
   c[1] = TOVdata->rho_baryon; // Baryon density
@@ -217,19 +215,18 @@ void TOVola_assign_constants(CCTK_REAL c[], TOVola_data_struct *TOVdata) {
 /* Function to set up the GSL ODE system and driver */
 static int setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, gsl_odeiv2_driver **driver, TOVola_data_struct *TOVdata) {
   
-  DECLARE_CCTK_PARAMETERS
 
   system->function = TOVola_ODE;
   system->jacobian = TOVola_jacobian_placeholder;
   system->dimension = 4; // Hardcoded as per requirements
   system->params = TOVdata;
 
-  if (CCTK_EQUALS(TOVola_ODE_method, "ARKF")) {
-    *driver = gsl_odeiv2_driver_alloc_y_new(system, gsl_odeiv2_step_rkf45, TOVola_initial_ode_step_size, TOVola_error_limit,
-                                            TOVola_error_limit);
-  } else if (CCTK_EQUALS(TOVola_ODE_method, "ADP8")) {
-    *driver = gsl_odeiv2_driver_alloc_y_new(system, gsl_odeiv2_step_rk8pd, TOVola_initial_ode_step_size, TOVola_error_limit,
-                                            TOVola_error_limit);
+  if (CCTK_EQUALS(ode_method, "ARKF")) {
+    *driver = gsl_odeiv2_driver_alloc_y_new(system, gsl_odeiv2_step_rkf45, TOVdata->initial_ode_step_size, TOVdata->error_limit,
+                                            TOVdata->error_limit);
+  } else if (CCTK_EQUALS(ode_method, "ADP8")) {
+    *driver = gsl_odeiv2_driver_alloc_y_new(system, gsl_odeiv2_step_rk8pd, TOVdata->initial_ode_step_size, TOVdata->error_limit,
+                                            TOVdata->error_limit);
   } else {
     CCTK_ERROR("Invalid ODE method. Use 'ARKF' or 'ADP8'.\n");
     return -1;
@@ -241,8 +238,8 @@ static int setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, g
   }
 
   /* Set minimum and maximum step sizes */
-  gsl_odeiv2_driver_set_hmin(*driver, TOVola_absolute_min_step);
-  gsl_odeiv2_driver_set_hmax(*driver, TOVola_absolute_max_step);
+  gsl_odeiv2_driver_set_hmin(*driver, TOVdata->absolute_min_step);
+  gsl_odeiv2_driver_set_hmax(*driver, TOVdata->absolute_max_step);
 
   return 0;
 }
@@ -256,7 +253,6 @@ static int initialize_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->M_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
   TOVdata->nu_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
   TOVdata->Iso_r_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
-
   if (!TOVdata->rSchw_arr || !TOVdata->rho_energy_arr || !TOVdata->rho_baryon_arr || !TOVdata->P_arr || !TOVdata->M_arr || !TOVdata->nu_arr ||
       !TOVdata->Iso_r_arr) {
     CCTK_ERROR("Memory allocation failed for TOVola_data_struct.\n");
@@ -277,12 +273,12 @@ static void free_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->numels_alloced_TOV_arr = 0;
 }
 
+
 /* Normalize and set data */
-void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata, CCTK_REAL *restrict r_Schw, CCTK_REAL *restrict rho_energy,
+static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata, CCTK_REAL *restrict r_Schw, CCTK_REAL *restrict rho_energy,
                                               CCTK_REAL *restrict rho_baryon, CCTK_REAL *restrict P, CCTK_REAL *restrict M, CCTK_REAL *restrict expnu,
                                               CCTK_REAL *restrict exp4phi, CCTK_REAL *restrict r_iso) {
   
-  DECLARE_CCTK_PARAMETERS	
 	
   CCTK_INFO("TOVola Normalizing raw TOV data...\n");
 
@@ -329,12 +325,11 @@ void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata, CCTK_
 
 
 //Perform the TOV integration using GSL
-void TOVola_Solve(CCTK_ARGUMENTS){
+void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
 
-  DECLARE_CCTK_PARAMETERS
-  
-  CCTK_INFO("Starting TOV Integration using GSL for TOVola...\n");
-
+  DECLARE_CCTK_PARAMETERS;
+  TOVola_ID_persist_struct TOVola_ID_persist_tmp;  // allocates memory for the pointer below.
+  TOVola_ID_persist_struct *restrict TOVola_ID_persist = &TOVola_ID_persist_tmp;
   CCTK_REAL current_position = 0;
 
   /* Set up ODE system and driver */
@@ -343,10 +338,18 @@ void TOVola_Solve(CCTK_ARGUMENTS){
   gsl_odeiv2_system system;
   gsl_odeiv2_driver *driver;
   TOVdata->numpoints_actually_saved = 0;
+  TOVdata->error_limit = TOVola_error_limit;
+  TOVdata->initial_ode_step_size = TOVola_initial_ode_step_size;
+  TOVdata->absolute_max_step = TOVola_absolute_max_step;
+  TOVdata->absolute_min_step = TOVola_absolute_min_step;
+  TOVdata->Interpolation_Stencil = TOVola_Interpolation_Stencil;
+  TOVdata->Max_Interpolation_Stencil = TOVola_Max_Interpolation_Stencil;
+  TOVdata->central_baryon_density = TOVola_central_baryon_density;
   if (setup_ode_system(TOVola_ODE_method, &system, &driver, TOVdata) != 0) {
     CCTK_ERROR("Failed to set up ODE system.\n");
   }
-
+  
+  CCTK_INFO("Starting TOV Integration using GSL for TOVola...\n");
   /* Initialize ODE variables */
   CCTK_REAL y[ODE_SOLVER_DIM];
   CCTK_REAL c[2];
@@ -417,7 +420,7 @@ void TOVola_Solve(CCTK_ARGUMENTS){
     TOVdata->numpoints_actually_saved++;
 
     // r_SchwArr_np,rhoArr_np,rho_baryonArr_np,PArr_np,mArr_np,exp2phiArr_np,confFactor_exp4phi_np,r_isoArr_np),
-    // printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e soln\n", current_position, dr, c[0], c[1], y[TOVOLA_PRESSURE], y[TOVOLA_MASS], y[TOVOLA_NU]);
+    //printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e soln\n", current_position, dr, c[0], c[1], y[TOVOLA_PRESSURE], y[TOVOLA_MASS], y[TOVOLA_NU]);
 
     /* Termination condition */
     if (TOVola_do_we_terminate(current_position, y, TOVdata)) {
@@ -454,4 +457,7 @@ void TOVola_Solve(CCTK_ARGUMENTS){
 
   /* Free raw data as it's no longer needed */
   free_tovola_data(TOVdata);
+
+  /* Now to interp, and finalize the grid. */
+  TOVola_interp();
 }
