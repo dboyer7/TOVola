@@ -37,7 +37,12 @@ USES KEYWORD metric_type
 CCTK_INT TOVola_Interpolation_Stencil "Stencil Size for Interpollator to Grid"
 {
 	1:* :: "Minimum stencil of 1"
-} 12
+} 11
+
+CCTK_INT TOVola_Max_Interpolation_Stencil "Maximum Interpollator stencil"
+{
+	1:* :: "Minimum stencil of 1"
+} 13
 
 CCTK_REAL TOVola_Tin "Beta Equilibrium Temperature"
 {
@@ -47,7 +52,7 @@ CCTK_REAL TOVola_Tin "Beta Equilibrium Temperature"
 CCTK_REAL TOVola_central_baryon_density "What's the initial baryon density? (Used to calculate initial pressure)."
 {
 	0.0:* :: "Must be Positive"
-} 0.129285
+} 0.125
 
 STRING TOVola_EOS_type "What EOS type are you using?"
 {
@@ -61,10 +66,10 @@ STRING TOVola_EOS_type "What EOS type are you using?"
 #################################################################################################################
 #Parameters for TOVola: ODE Method and Parameters
 #################################################################################################################
-CCTK_REAL TOVola_step "Initial Step Size"
+CCTK_REAL TOVola_initial_ode_step_size "Initial Step Size"
 {
 	0.0:* :: "Must be Positive"
-} 1.0e-5
+} 1.0e-20
 
 CCTK_INT TOVola_size "Maximum number of steps"
 {
@@ -86,12 +91,12 @@ CCTK_REAL TOVola_error_limit "Limiting factor of the error"
 CCTK_REAL TOVola_absolute_max_step "Biggest possible step size."
 {
   0.0:* :: "Must be positive"
-} 1.0e-1
+} 1.0
 
 CCTK_REAL TOVola_absolute_min_step "Smallest possible step size"
 {
   0.0:* :: "Must be positive"
-} 1.0e-8
+} 1.0e-20
 #################################################################################################################
 
 
