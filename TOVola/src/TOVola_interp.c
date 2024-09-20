@@ -1,5 +1,4 @@
 #include "GRHayLib.h" //Access to GRHayL library in the ET
-#include "TOVola_solve.c" //Mainly for access to the TOVola_ID_persist struct
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
