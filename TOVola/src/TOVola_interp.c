@@ -1,4 +1,5 @@
 #include "GRHayLib.h" //Access to GRHayL library in the ET
+#include "TOVola_defines.h" //Access to the ID_persist struct
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,9 +130,117 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
   }
   //printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e hhhh\n", rr_iso, r_Schw, *rho_energy, *rho_baryon, *P, *M, *expnu, *exp4phi);
 }
+/*
+static void TOVola_interp(TOVola_ID_persist_struct *TOVola_ID_persist, int Interpolation_Stencil, int Max_Interpolation_Stencil){
 
-static void TOVola_interp(){
+   
 
+  //get surface values for later calculations.
+  CCTK_REAL TOVola_Rbar = TOVola_ID_persist->r_iso_arr[TOVola_ID_persist->numpoints_arr-1]; 
+  CCTK_REAL TOVola_Mass = TOVola_ID_persist->M_arr[TOVola_ID_persist->numpoints_arr-1];
+  
+  
+  //Now for the actual grid placements. Go over all grid points
+  CCTK_INFO("TOVola Beginning Grid Placements...");
+  for(int i=0; i<cctk_lsh[0]; i++){ 
+  	for(int j=0; j<cctk_lsh[1]; j++){ 
+  		for(int k=0; k<cctk_lsh[2]; k++){ 
+  			int i3d=CCTK_GFINDEX3D(cctkGH,i,j,k); //3D index
+  			CCTK_REAL TOVola_r_iso = sqrt((x[i3d]*x[i3d])+(y[i3d]*y[i3d])+(z[i3d]*z[i3d])); //magnitude of r on the grid
+  			CCTK_REAL TOVola_rho_energy, TOVola_rho_baryon, TOVola_P, TOVola_M, TOVola_expnu, TOVola_exp4phi; //Declare TOV quantities
+  			if (TOVola_r_iso < TOVola_Rbar){ //If we are INSIDE the star, we need to interpollate the data to the grid.
+  				TOVola_TOV_interpolate_1D(TOVola_r_iso, Interpolation_Stencil, Max_Interpolation_Stencil,
+                                      TOVola_ID_persist->numpoints_arr, TOVola_ID_persist->r_Schw_arr,
+                                      TOVola_ID_persist->rho_energy_arr, TOVola_ID_persist->rho_baryon_arr, TOVola_ID_persist->P_arr,
+                                      TOVola_ID_persist->M_arr, TOVola_ID_persist->expnu_arr, TOVola_ID_persist->exp4phi_arr,
+                                      TOVola_ID_persist->r_iso_arr, &TOVola_rho_energy, &TOVola_rho_baryon, &TOVola_P,
+                                      &TOVola_M, &TOVola_expnu, &TOVola_exp4phi);
+  				rho[i3d] = TOVola_rho_baryon;
+				press[i3d] = TOVola_P;
+				// tiny number prevents 0/0.
+				eps[i3d] = (TOVola_rho_energy / (TOVola_rho_baryon+1e-30)) - 1.0;
+				if (eps[i3d]<0){eps[i3d]=0.0;}
+				alp[i3d] = pow(TOVola_expnu,0.5);//This is the lapse
+				gxx[i3d] = TOVola_exp4phi;//This is the values for the metric in the coordinates we chose.
+				gyy[i3d] = gxx[i3d];
+				gzz[i3d] = gxx[i3d];}
+			else { //If we are OUTSIDE the star, we need to calculate the grid functions directly. Thank you, Schwarzchild.
+				CCTK_REAL TOVola_rSchw_outside = (TOVola_r_iso+TOVola_Mass) + TOVola_Mass*TOVola_Mass/(4.0*TOVola_r_iso);//Need to know what rSchw is at our current grid location.
+				rho[i3d] = 0.0;
+				press[i3d] = 0.0;
+				eps[i3d] = 0.0;
+				alp[i3d] = pow(1-2*TOVola_Mass/TOVola_rSchw_outside,0.5); //Goes to Schwarschild
+				gxx[i3d] = pow((TOVola_rSchw_outside/TOVola_r_iso),2.0);
+				gyy[i3d] = gxx[i3d];
+				gzz[i3d] = gxx[i3d];
+				}
+			
+			betax[i3d] = 0.0;
+			betay[i3d] = 0.0;
+			betaz[i3d] = 0.0;
+			gxy[i3d] = 0.0;
+			gxz[i3d] = 0.0;
+			gyz[i3d] = 0.0;
+			//Curvature is zero for our slice.
+			kxx[i3d] = 0.0;
+			kyy[i3d] = 0.0;
+			kzz[i3d] = 0.0;
+			kxy[i3d] = 0.0;
+			kxz[i3d] = 0.0;
+			kyz[i3d] = 0.0;
+			//velocities are zero: It is a static solution.
+			velx[i3d] = 0.0;
+			vely[i3d] = 0.0;
+			velz[i3d] = 0.0;
+	        	w_lorentz[i3d] = 1.0;
+  		}
+  	}
+  }
+  			
+  CCTK_INFO("Grid Placement Successful!");
+  
+  //This piece of the code was VERY heavily inspired by the original ET TOVSolver, with minor edits for TOVola
+  CCTK_INFO("TOVola Finalizing Grid...\n");
+  int i3d = cctk_lsh[2]*cctk_lsh[1]*cctk_lsh[0];
+  switch(TOVola_TOV_Populate_Timelevels)
+  {
+    case 3:
+        TOVola_TOV_Copy(i3d, gxx_p_p,  gxx);
+        TOVola_TOV_Copy(i3d, gyy_p_p,  gyy);
+        TOVola_TOV_Copy(i3d, gzz_p_p,  gzz);
+        TOVola_TOV_Copy(i3d, gxy_p_p,  gxy);
+        TOVola_TOV_Copy(i3d, gxz_p_p,  gxz);
+        TOVola_TOV_Copy(i3d, gyz_p_p,  gyz);
+        TOVola_TOV_Copy(i3d, rho_p_p,  rho);
+        TOVola_TOV_Copy(i3d, eps_p_p,  eps);
+        TOVola_TOV_Copy(i3d, velx_p_p, velx);
+        TOVola_TOV_Copy(i3d, vely_p_p, vely);
+        TOVola_TOV_Copy(i3d, velz_p_p, velz);
+        TOVola_TOV_Copy(i3d, w_lorentz_p_p, w_lorentz);
+        // fall through
+    case 2:
+        TOVola_TOV_Copy(i3d, gxx_p,  gxx);
+        TOVola_TOV_Copy(i3d, gyy_p,  gyy);
+        TOVola_TOV_Copy(i3d, gzz_p,  gzz);
+        TOVola_TOV_Copy(i3d, gxy_p,  gxy);
+        TOVola_TOV_Copy(i3d, gxz_p,  gxz);
+        TOVola_TOV_Copy(i3d, gyz_p,  gyz);
+        TOVola_TOV_Copy(i3d, rho_p,  rho);
+        TOVola_TOV_Copy(i3d, eps_p,  eps);
+        TOVola_TOV_Copy(i3d, velx_p, velx);
+        TOVola_TOV_Copy(i3d, vely_p, vely);
+        TOVola_TOV_Copy(i3d, velz_p, velz);
+        TOVola_TOV_Copy(i3d, w_lorentz_p, w_lorentz);
+        // fall through
+    case 1:
+        break;
+    default:
+        CCTK_VWARN(CCTK_WARN_ABORT,
+                   "Unsupported number of TOVola_TOV_Populate_TimelevelsL: %d",
+                   (int)TOVola_TOV_Populate_Timelevels);
+        break;
+  }*/
+  
 /*
   const CCTK_REAL x = xCart[0];
   const CCTK_REAL y = xCart[1];
@@ -184,5 +293,5 @@ static void TOVola_interp(){
   initial_data->T4SphorCartUU22 = P_val / (exp4phi_val * r_iso * r_iso);
   initial_data->T4SphorCartUU23 = 0.0;
   initial_data->T4SphorCartUU33 = P_val / (exp4phi_val * r_iso * r_iso * sin(theta) * sin(theta));
-  */
-}
+  
+}*/

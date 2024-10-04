@@ -74,7 +74,7 @@ CCTK_REAL TOVola_initial_ode_step_size "Initial Step Size"
 CCTK_INT TOVola_size "Maximum number of steps"
 {
 	1:* :: "Minimum of 1 step"
-} 100000000
+} 10000000
 
 #Only allowing these two methods right now. I can add a few more if there is a demand.
 STRING TOVola_ODE_method "What type of method are we using (More Methods can be added if there is demand)"
