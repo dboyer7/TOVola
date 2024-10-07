@@ -236,7 +236,7 @@ static void TOVola_get_initial_condition(CCTK_REAL y[], TOVola_data_struct *TOVd
     TOVdata->rho_energy = (TOVdata->rho_baryon)*(1.0+eps);
   }
 
-  CCTK_VINFO("Initial Conditions Set: P = %.6e, nu = %.6e, M = %.6e, r_iso = %.6e\n", y[TOVOLA_PRESSURE], y[TOVOLA_NU], y[TOVOLA_MASS], y[TOVOLA_R_ISO]);
+  CCTK_VINFO("Initial Conditions Set: P = %.6e, nu = %.6e, M = %.6e, r_iso = %.6e", y[TOVOLA_PRESSURE], y[TOVOLA_NU], y[TOVOLA_MASS], y[TOVOLA_R_ISO]);
 }
 
 /* Assign constants after each integration step */
@@ -267,12 +267,12 @@ static int setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, g
     *driver = gsl_odeiv2_driver_alloc_y_new(system, gsl_odeiv2_step_rk8pd, TOVdata->initial_ode_step_size, TOVdata->error_limit,
                                             TOVdata->error_limit);
   } else {
-    CCTK_ERROR("Invalid ODE method. Use 'ARKF' or 'ADP8'.\n");
+    CCTK_ERROR("Invalid ODE method. Use 'ARKF' or 'ADP8'.");
     return -1;
   }
 
   if (*driver == NULL) {
-    CCTK_ERROR("Failed to allocate GSL ODE driver.\n");
+    CCTK_ERROR("Failed to allocate GSL ODE driver.");
     return -1;
   }
 
@@ -294,7 +294,7 @@ static int initialize_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->Iso_r_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
   if (!TOVdata->rSchw_arr || !TOVdata->rho_energy_arr || !TOVdata->rho_baryon_arr || !TOVdata->P_arr || !TOVdata->M_arr || !TOVdata->nu_arr ||
       !TOVdata->Iso_r_arr) {
-    CCTK_ERROR("Memory allocation failed for TOVola_data_struct.\n");
+    CCTK_ERROR("Memory allocation failed for TOVola_data_struct.");
     return -1;
   }
   return 0;
@@ -319,11 +319,11 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
                                               CCTK_REAL *restrict exp4phi, CCTK_REAL *restrict r_iso) {
   
 	
-  CCTK_INFO("TOVola Normalizing raw TOV data...\n");
+  CCTK_INFO("TOVola Normalizing raw TOV data...");
 
   /* Check if there are enough points to normalize */
   if (TOVdata->numpoints_actually_saved < 2) {
-    CCTK_ERROR("Not enough data points to normalize.\n");
+    CCTK_ERROR("Not enough data points to normalize.");
   }
 
   /* Copy raw data to normalized arrays */
@@ -351,7 +351,7 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
     expnu[i] = exp(expnu[i] - nu_surface + log(1.0 - 2.0 * M_surface / R_Schw_surface));
     exp4phi[i] = (r_Schw[i] / r_iso[i]) * (r_Schw[i] / r_iso[i]);
   }
-  CCTK_INFO("Normalization of raw data complete!\n");
+  CCTK_INFO("Normalization of raw data complete!");
 }
 
 /* Extend data to r<0, to ensure we can interpolate to r=0 */
@@ -361,13 +361,27 @@ void extend_to_negative_r(CCTK_REAL *restrict arr, const CCTK_REAL parity, CCTK_
   memcpy(arr, tmp, sizeof(CCTK_REAL) * (TOVdata->numpoints_actually_saved+NEGATIVE_R_INTERP_BUFFER));
 }
 
-
+//For timelevel population, from original TOVsolver in the toolkit.
+void TOVola_TOV_Copy(CCTK_INT size, CCTK_REAL *var_p, CCTK_REAL *var)
+{
+#pragma omp parallel for
+    for(int i=0; i<size; i++)
+        var_p[i] = var[i];
+}
 
 
 //Helpful defines for later.
 #define velx (&vel[0*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
 #define vely (&vel[1*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
 #define velz (&vel[2*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+//For timelevel population
+#define velx_p (&vel_p[0*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+#define vely_p (&vel_p[1*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+#define velz_p (&vel_p[2*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+#define velx_p_p (&vel_p_p[0*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+#define vely_p_p (&vel_p_p[1*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+#define velz_p_p (&vel_p_p[2*cctk_lsh[0]*cctk_lsh[1]*cctk_lsh[2]])
+
 
 
 //Perform the TOV integration using GSL
@@ -392,7 +406,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     if(ghl_eos->neos!=1){
       CCTK_INFO("Error: Too many regions for the simple polytrope.");
       CCTK_INFO("Check your value for neos, or use a piecewise polytrope");
-      CCTK_ERROR("Shutting down due to error...\n");}       
+      CCTK_ERROR("Shutting down due to error...");}       
     }
   else if(CCTK_EQUALS("Piecewise",TOVola_EOS_type)){
     CCTK_INFO("Piecewise Polytrope");
@@ -404,7 +418,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   }
   else{
     CCTK_INFO("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'");
-    CCTK_ERROR("Shutting down due to error...\n");}
+    CCTK_ERROR("Shutting down due to error...");}
 
   TOVdata->numpoints_actually_saved = 0;
   TOVdata->error_limit = TOVola_error_limit;
@@ -414,10 +428,10 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   TOVdata->central_baryon_density = TOVola_central_baryon_density;
   TOVdata->ghl_eos = ghl_eos;
   if (setup_ode_system(TOVola_ODE_method, &system, &driver, TOVdata) != 0) {
-    CCTK_ERROR("Failed to set up ODE system.\n");
+    CCTK_ERROR("Failed to set up ODE system.");
   }
   
-  CCTK_INFO("Starting TOV Integration using GSL for TOVola...\n");
+  CCTK_INFO("Starting TOV Integration using GSL for TOVola...");
   /* Initialize ODE variables */
   CCTK_REAL TOVola_eq[ODE_SOLVER_DIM];
   CCTK_REAL c[2];
@@ -428,7 +442,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   TOVdata->numels_alloced_TOV_arr = 1024;
   if (initialize_tovola_data(TOVdata) != 0) {
     gsl_odeiv2_driver_free(driver);
-    CCTK_ERROR("Failed to initialize TOVola_data_struct.\n");
+    CCTK_ERROR("Failed to initialize TOVola_data_struct.");
   }
 
   /* Integration loop */
@@ -445,9 +459,9 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     /* Apply ODE step */
     int status = gsl_odeiv2_driver_apply(driver, &current_position, current_position + dr, TOVola_eq);
     if (status != GSL_SUCCESS) {
-      CCTK_VINFO("GSL ODE solver failed with status %d.\n", status);
+      CCTK_VINFO("GSL ODE solver failed with status %d.", status);
       gsl_odeiv2_driver_free(driver);
-      CCTK_ERROR("Shutting down due to error\n");
+      CCTK_ERROR("Shutting down due to error");
     };
 
     /* Post-step exception handling */
@@ -486,20 +500,17 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     TOVdata->nu_arr[TOVdata->numpoints_actually_saved] = TOVola_eq[TOVOLA_NU];
     TOVdata->Iso_r_arr[TOVdata->numpoints_actually_saved] = TOVola_eq[TOVOLA_R_ISO];
     TOVdata->numpoints_actually_saved++;
-    //printf("%.14e\n",TOVola_eq[TOVOLA_MASS]);
-    // r_SchwArr_np,rhoArr_np,rho_baryonArr_np,PArr_np,mArr_np,exp2phiArr_np,confFactor_exp4phi_np,r_isoArr_np),
-    //printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e soln\n", current_position, dr, c[0], c[1], TOVola_eq[TOVOLA_PRESSURE], TOVola_eq[TOVOLA_MASS], TOVola_eq[TOVOLA_NU]);
 
     /* Termination condition */
     if (TOVola_do_we_terminate(current_position, TOVola_eq, TOVdata)) {
-      CCTK_VINFO("Finished Integration at position %.6e with Mass %.14e\n", current_position, TOVola_eq[TOVOLA_MASS]);
+      CCTK_VINFO("Finished Integration at position %.6e with Mass %.14e", current_position, TOVola_eq[TOVOLA_MASS]);
       break;
     }
   }
 
   /* Cleanup */
   gsl_odeiv2_driver_free(driver);
-  CCTK_INFO("ODE Solver using GSL for TOVola Shutting Down...\n");
+  CCTK_INFO("ODE Solver using GSL for TOVola Shutting Down...");
 
   // Data in TOVdata->*_arr are stored at r=TOVdata->commondata->initial_ode_step_size > 0 up to the stellar surface.
   // However, we may need data at r=0, which would require extrapolation.
@@ -610,6 +621,53 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   }
   			
   CCTK_INFO("Grid Placement Successful!");
+  CCTK_INFO("Populating Time Levels...");
+
+  //This is to populate time levels.
+  //Luckily, this is a static solution, so the logic isn't too complicated.
+  //From the original TOVsolver in the toolkit.
+  int i3d = cctk_lsh[2]*cctk_lsh[1]*cctk_lsh[0];
+  switch(TOVola_TOV_Populate_Timelevels)
+  {
+    case 3:
+        TOVola_TOV_Copy(i3d, gxx_p_p,  gxx);
+        TOVola_TOV_Copy(i3d, gyy_p_p,  gyy);
+        TOVola_TOV_Copy(i3d, gzz_p_p,  gzz);
+        TOVola_TOV_Copy(i3d, gxy_p_p,  gxy);
+        TOVola_TOV_Copy(i3d, gxz_p_p,  gxz);
+        TOVola_TOV_Copy(i3d, gyz_p_p,  gyz);
+        TOVola_TOV_Copy(i3d, rho_p_p,  rho);
+        TOVola_TOV_Copy(i3d, eps_p_p,  eps);
+        TOVola_TOV_Copy(i3d, velx_p_p, velx);
+        TOVola_TOV_Copy(i3d, vely_p_p, vely);
+        TOVola_TOV_Copy(i3d, velz_p_p, velz);
+        TOVola_TOV_Copy(i3d, w_lorentz_p_p, w_lorentz);
+        // fall through
+    case 2:
+        TOVola_TOV_Copy(i3d, gxx_p,  gxx);
+        TOVola_TOV_Copy(i3d, gyy_p,  gyy);
+        TOVola_TOV_Copy(i3d, gzz_p,  gzz);
+        TOVola_TOV_Copy(i3d, gxy_p,  gxy);
+        TOVola_TOV_Copy(i3d, gxz_p,  gxz);
+        TOVola_TOV_Copy(i3d, gyz_p,  gyz);
+        TOVola_TOV_Copy(i3d, rho_p,  rho);
+        TOVola_TOV_Copy(i3d, eps_p,  eps);
+        TOVola_TOV_Copy(i3d, velx_p, velx);
+        TOVola_TOV_Copy(i3d, vely_p, vely);
+        TOVola_TOV_Copy(i3d, velz_p, velz);
+        TOVola_TOV_Copy(i3d, w_lorentz_p, w_lorentz);
+        // fall through
+    case 1:
+        break;
+    default:
+        CCTK_VWARN(CCTK_WARN_ABORT,
+                   "Unsupported number of TOVola_TOV_Populate_TimelevelsL: %d",
+                   (int)TOVola_TOV_Populate_Timelevels);
+        break;
+  }
+
+
+  CCTK_INFO("Population Complete!");
   
   CCTK_INFO("Complete! Enjoy your initial data!");
   CCTK_INFO("TOVola shutting down...");
