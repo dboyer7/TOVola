@@ -1,3 +1,7 @@
+#pragma once
+
+//This header files holds all the functions necessary for interpolation to the ET grid, and are called in driver function.
+
 #include "GRHayLib.h" //Access to GRHayL library in the ET
 #include "TOVola_defines.h" //Access to the ID_persist struct
 #include <string.h>

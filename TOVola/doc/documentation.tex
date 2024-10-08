@@ -103,7 +103,7 @@
 % Add an abstract for this thorn's documentation
 \begin{abstract}
 
-{\tt TOVola} is a thorn for the Einstien Toolkit that solves the Tolman-Oppenheimer-Volkov (TOV) equations of spherically symmetric static stars using an adaptive ODE method (RK45 or DP78) using GSL's ODE solver. This TOV solver is compatible with three types of Equations of State (EOS): Simple Polytrope, Piecewise Polytrope, and Tabulated EOS. Examples of using each EOS is included in the {\tt par} directory. Raw data is solved, normalized, and set on the ET grid, and constraint tested via the {\tt Baikal} thorn.\cite{Baikal}
+{\tt TOVola} is a thorn for the Einstien Toolkit that solves the Tolman-Oppenheimer-Volkov (TOV) equations for spherically symmetric static stars using an adaptive ODE method (RK45 or DP78) using GSL's ODE solver. This TOV solver is compatible with three types of Equations of State (EOS): Simple Polytrope, Piecewise Polytrope, and Tabulated EOS. Examples of using each EOS is included in the {\tt par} directory. Raw data is solved for, normalized, and set onto the ET grid, and constraint tested via the {\tt Baikal} thorn.\cite{Baikal}
 \end{abstract}
 
 % The following sections are suggestive only.
@@ -113,7 +113,7 @@
 
 {\tt TOVola} is a thorn developed to handle the TOV equations using multiple different types of EOS and use adaptive methods to solve the system of ODEs. It is specifically developed to solve the TOV equations and adjust and interpolate the TOV data to the ET grid.
 
-{\tt TOVola} features multiple EOS compatibility, for Simple and Piecewise Polytropes, as well as Tabulated EOS. EOS parameters are stored by the {\tt GRHayL} library \cite{GRHayL}, so make sure you specify for it either polytropic parameters for your specific table path in your parfile.
+{\tt TOVola} features multiple EOS compatibility, for Simple and Piecewise Polytropes, as well as Tabulated EOS. EOS parameters are stored by the {\tt GRHayL} library, {\tt GRHayLib} \cite{GRHayL}, so make sure you specify for it either your polytropic parameters or your specific table path in your parfile.
 
 \section{TOV Equations and Equations of State}
 
@@ -160,13 +160,11 @@ where $\epsilon$ is the internal energy density.
 
 \section{Solving the ODE System}
 
-The ODE solver that {\tt TOVola} uses is the {\tt GSL} ODE solver. It can solve any ODE system it is given, as long as it is broken into a set of 1st-order ODEs. It can handle a variety of ODE methods, as well as adaptive and non-adaptive methods. {\tt TOVola} only enables the adaptive RK4(5) method (ARKF) and the adaptive DP7(8) method (ADP8). If there is demand, I can enable more methods, but these are the ones that I felt were of the most use.
+The ODE solver that {\tt TOVola} uses is the {\tt GSL} ODE solver. It can solve any ODE system it is given, as long as it is broken into a set of 1st-order ODEs (exactly what the TOV equations are in the first place). It can handle a variety of ODE methods, as well as adaptive and non-adaptive methods. {\tt TOVola} only enables the adaptive RK4(5) method (ARKF) and the adaptive DP7(8) method (ADP8). If there is demand, I can enable more methods, but these are the ones that I felt were of the most use.
 
-{\tt TOVola} integrates the TOV equations twice: once to count up how much memory needs to be allocated for storing the solution, and then second to actually write the solution to memory. 
+The integration starts by calculating the initial pressure of the system from a given central baryon density, $\rho_c$. Then, using {\tt GSL}, it steps through the integration. The integration will continue until the termination condition is hit, which was chosen to be the surface of the star. It saves the solution for each step, reallocating memory for the stored solution if the solution gets sufficiently large.
 
-The integration starts by calculating the initial pressure of the system from a given central baryon density, $\rho_c$. Then, using {\tt GSL}, it steps through the integration. The integration will continue until the termination condition is hit, which was chosen to be the surface of the star. Once again, it does this process twice to prepare for memory allocation and then to actually write to that allocated memory. We felt this was acceptable to do, since the TOV code is very computationally inexpensive.
-
-Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated for further use in the toolkit. {\tt TOVola} then uses an interpolator generated from the {\tt nrpytutorial}\cite{NRpy} library to interpolate the adjusted data to the ET grid. {\tt TOVola} uses {\tt HydroBase} and {\tt ADMBase} for TOV quantities, and uses {\tt Baikal} to calculate the constraint violations in the example parfile. $T^{\mu\nu}$ is calculated using {\tt GRHayLHD} and stored in {\tt TmunuBase}.
+Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated for further use in the toolkit. {\tt TOVola} then uses an interpolator generated from the {\tt nrpytutorial}\cite{NRpy} library to interpolate the adjusted data to the ET grid. {\tt TOVola} uses {\tt HydroBase} and {\tt ADMBase} for TOV quantities, and uses {\tt Baikal} to calculate the constraint violations in the example parfiles. $T^{\mu\nu}$ is calculated using {\tt GRHayLHD} and stored in {\tt TmunuBase}.
 
 \section{Using TOVola}
 
@@ -202,6 +200,8 @@ Example parfiles can be found in the thorn's {\tt par} directory. There is one f
 \end{itemize}
 
 {\tt Baikal} was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so these example parfiles still include constraint violation calculations.
+
+Gallery examples are also being created and will be included in the example parfiles once they are acceptable.
 
 \section{Acknowledgements}
 

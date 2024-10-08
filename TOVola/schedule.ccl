@@ -13,6 +13,6 @@ if (CCTK_Equals(initial_data, "TOVola"))
 	SCHEDULE TOVola_Solve_and_Interp IN TOVola_TOV_Grid
 	{
 		LANG: C
-	} "Performs the TOV initial data solution algorithm and counts how many points the solution has."
+	} "Performs the TOV initial data solution algorithm. Calls the integration function for the raw data, normalizes the data to make it more usable, and interpolates to the ET grid."
 
 }
