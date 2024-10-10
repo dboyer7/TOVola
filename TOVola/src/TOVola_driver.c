@@ -1,17 +1,14 @@
+#include "cctk.h"
+#include "cctk_Arguments.h"
+#include "cctk_Parameters.h"
+
+#include "gsl/gsl_odeiv2.h"
+#include "gsl/gsl_errno.h"
+
 #include "GRHayLib.h"
 #include "TOVola_interp.h"
 #include "TOVola_defines.h"
 #include "TOVola_solve.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <gsl/gsl_odeiv2.h>
-#include <gsl/gsl_errno.h>
-
-#include <cctk.h>
-#include <cctk_Arguments.h>
-#include <cctk_Parameters.h>
 
 /********************************
 // TOVola is a TOV solver inspired by NRPy designed specifically for use in the Einstein Toolkit.
@@ -126,7 +123,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
 
   /* Integration loop */
   TOVdata->r_lengthscale = TOVola_initial_ode_step_size; // initialize dr to a crazy small value in double precision.
-  for (int i = 0; i < TOVola_size; i++) {
+  for (CCTK_INT i = 0; i < TOVola_size; i++) {
     CCTK_REAL dr = 0.01 * TOVdata->r_lengthscale;
     if (TOVdata->rho_baryon < 0.05 * TOVola_central_baryon_density) {
       // To get a super-accurate mass, reduce the dr sampling near the surface of the star.
@@ -136,7 +133,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     TOVola_exception_handler(current_position, TOVola_eq);
 
     /* Apply ODE step */
-    int status = gsl_odeiv2_driver_apply(driver, &current_position, current_position + dr, TOVola_eq);
+    CCTK_INT status = gsl_odeiv2_driver_apply(driver, &current_position, current_position + dr, TOVola_eq);
     if (status != GSL_SUCCESS) {
       CCTK_VINFO("GSL ODE solver failed with status %d.", status);
       gsl_odeiv2_driver_free(driver);
@@ -153,7 +150,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     /* Check if reallocation is needed */
     if (TOVdata->numpoints_actually_saved >= TOVdata->numels_alloced_TOV_arr) {
       // Update arr_size instead of modifying the macro
-      const int new_arr_size = 1.5 * TOVdata->numels_alloced_TOV_arr;
+      const CCTK_INT new_arr_size = 1.5 * TOVdata->numels_alloced_TOV_arr;
       TOVdata->numels_alloced_TOV_arr = new_arr_size;
       TOVdata->rSchw_arr = realloc(TOVdata->rSchw_arr, sizeof(CCTK_REAL) * new_arr_size);
       TOVdata->rho_energy_arr = realloc(TOVdata->rho_energy_arr, sizeof(CCTK_REAL) * new_arr_size);
@@ -240,10 +237,10 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   //Now for the actual grid placements. Go over all grid points
   CCTK_INFO("TOVola Beginning Grid Placements...");
 #pragma omp parallel for
-  for(int i=0; i<cctk_lsh[0]; i++){ 
-  	for(int j=0; j<cctk_lsh[1]; j++){ 
-  		for(int k=0; k<cctk_lsh[2]; k++){ 
-  			int i3d=CCTK_GFINDEX3D(cctkGH,i,j,k); //3D index
+  for(CCTK_INT i=0; i<cctk_lsh[0]; i++){ 
+  	for(CCTK_INT j=0; j<cctk_lsh[1]; j++){ 
+  		for(CCTK_INT k=0; k<cctk_lsh[2]; k++){ 
+  			CCTK_INT i3d=CCTK_GFINDEX3D(cctkGH,i,j,k); //3D index
   			CCTK_REAL TOVola_r_iso = sqrt((x[i3d]*x[i3d])+(y[i3d]*y[i3d])+(z[i3d]*z[i3d])); //magnitude of r on the grid
   			CCTK_REAL TOVola_rho_energy, TOVola_rho_baryon, TOVola_P, TOVola_M, TOVola_expnu, TOVola_exp4phi; //Declare TOV quantities
   			if (TOVola_r_iso < TOVola_Rbar){ //If we are INSIDE the star, we need to interpollate the data to the grid.
@@ -255,10 +252,9 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
                                       &TOVola_M, &TOVola_expnu, &TOVola_exp4phi);
   				rho[i3d] = TOVola_rho_baryon;
 				press[i3d] = TOVola_P;
-				// tiny number prevents 0/0.
-				eps[i3d] = (TOVola_rho_energy / (TOVola_rho_baryon+1e-30)) - 1.0;
+				eps[i3d] = (TOVola_rho_energy / (TOVola_rho_baryon)) - 1.0;
 				if (eps[i3d]<0){eps[i3d]=0.0;}
-				alp[i3d] = pow(TOVola_expnu,0.5);//This is the lapse
+				alp[i3d] = sqrt(TOVola_expnu);//This is the lapse
 				gxx[i3d] = TOVola_exp4phi;//This is the values for the metric in the coordinates we chose.
 				gyy[i3d] = gxx[i3d];
 				gzz[i3d] = gxx[i3d];}
@@ -267,7 +263,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
 				rho[i3d] = 0.0;
 				press[i3d] = 0.0;
 				eps[i3d] = 0.0;
-				alp[i3d] = pow(1-2*TOVola_Mass/TOVola_rSchw_outside,0.5); //Goes to Schwarschild
+				alp[i3d] = sqrt(1-2*TOVola_Mass/TOVola_rSchw_outside); //Goes to Schwarschild
 				gxx[i3d] = pow((TOVola_rSchw_outside/TOVola_r_iso),2.0);
 				gyy[i3d] = gxx[i3d];
 				gzz[i3d] = gxx[i3d];
@@ -301,7 +297,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   //This is to populate time levels.
   //Luckily, this is a static solution, so the logic isn't too complicated.
   //From the original TOVsolver in the toolkit.
-  int i3d = cctk_lsh[2]*cctk_lsh[1]*cctk_lsh[0];
+  CCTK_INT i3d = cctk_lsh[2]*cctk_lsh[1]*cctk_lsh[0];
   switch(TOVola_TOV_Populate_Timelevels)
   {
     case 3:
@@ -337,7 +333,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     default:
         CCTK_VWARN(CCTK_WARN_ABORT,
                    "Unsupported number of TOVola_TOV_Populate_TimelevelsL: %d",
-                   (int)TOVola_TOV_Populate_Timelevels);
+                   (CCTK_INT)TOVola_TOV_Populate_Timelevels);
         break;
   }
 
