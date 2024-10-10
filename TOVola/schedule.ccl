@@ -10,28 +10,9 @@ if (CCTK_Equals(initial_data, "TOVola"))
   	SYNC: w_lorentz
 	} "Group for the TOV initial data"
 
-	SCHEDULE TOVola_TOV_Integrator_1 IN TOVola_TOV_Grid
+	SCHEDULE TOVola_Solve_and_Interp IN TOVola_TOV_Grid
 	{
 		LANG: C
-	} "Performs the TOV initial data solution algorithm and counts how many points the solution has."
+	} "Performs the TOV initial data solution algorithm. Calls the integration function for the raw data, normalizes the data to make it more usable, and interpolates to the ET grid."
 
-	SCHEDULE TOVola_TOV_Allocate IN TOVola_TOV_Grid AFTER TOVola_TOV_Integrator_1
-	{
-		LANG: C
-	} "Allocates memory to the globals"
-
-	SCHEDULE TOVola_TOV_Integrator_2 IN TOVola_TOV_Grid AFTER TOVola_TOV_Allocate
-	{
-		LANG: C
-	} "Performs the TOV initial data solution again, and saves to allocated memory."
-
-	SCHEDULE TOVola_interp_Driver IN TOVola_TOV_Grid AFTER TOVola_TOV_Integrator_2
-	{
-		LANG:C
-	} "Adjusts raw TOV data and interpolates results to CCTK grid"
-
-	SCHEDULE TOVola_TOV_Cleanup IN TOVola_TOV_Grid AFTER TOVola_interp_Driver
-	{
-		LANG: C
-	} "Frees the globals."
 }
