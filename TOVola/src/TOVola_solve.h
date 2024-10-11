@@ -8,7 +8,9 @@
 
 #pragma once
 
+/*********************************************************************************************************************************************************
 //This is the header file that contains all the information about the TOVs and integration schemes. Used in conjunction with GSL in the driver function.
+*********************************************************************************************************************************************************/
 
 #define ODE_SOLVER_DIM 4
 #define TOVOLA_PRESSURE 0
@@ -303,6 +305,26 @@ static void free_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->numels_alloced_TOV_arr = 0;
 }
 
+/* Initialize TOVola_ID_persist_struct with initial allocation */
+static CCTK_INT initialize_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist, TOVola_data_struct *TOVdata) {
+  TOVola_ID_persist->r_Schw_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->rho_energy_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->rho_baryon_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->P_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->M_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->expnu_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->exp4phi_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->r_iso_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+
+  if (!TOVola_ID_persist->r_Schw_arr || !TOVola_ID_persist->rho_energy_arr || !TOVola_ID_persist->rho_baryon_arr || !TOVola_ID_persist->P_arr || !TOVola_ID_persist->M_arr ||
+      !TOVola_ID_persist->expnu_arr || !TOVola_ID_persist->exp4phi_arr || !TOVola_ID_persist->r_iso_arr) {
+    free_tovola_data(TOVdata);
+    CCTK_ERROR("Memory allocation failed for TOVola_ID_persist_struct arrays.\n");
+    return -1;
+  }
+  return 0;
+}
+
 /* Free TOVola_ID_persist_struct */
 static void free_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist) {
   CCTK_INFO("Cleanup! Freeing Memory...");
@@ -364,11 +386,4 @@ static void extend_to_negative_r(CCTK_REAL *restrict arr, const CCTK_REAL parity
   for(CCTK_INT i=0;i<NEGATIVE_R_INTERP_BUFFER; i++) tmp[i] = parity * arr[NEGATIVE_R_INTERP_BUFFER - i - 1];
   for(CCTK_INT i=0;i<TOVdata->numpoints_actually_saved; i++) tmp[i+NEGATIVE_R_INTERP_BUFFER] = arr[i];
   memcpy(arr, tmp, sizeof(CCTK_REAL) * (TOVdata->numpoints_actually_saved+NEGATIVE_R_INTERP_BUFFER));
-}
-
-static void TOVola_TOV_Copy(CCTK_INT size, CCTK_REAL *restrict var_p, CCTK_REAL *restrict var)
-{
-#pragma omp parallel for
-    for(CCTK_INT i=0; i<size; i++)
-        var_p[i] = var[i];
 }

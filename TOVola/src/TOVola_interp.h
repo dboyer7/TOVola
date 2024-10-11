@@ -3,7 +3,9 @@
 #include "GRHayLib.h" //Access to GRHayL library in the ET
 #include "TOVola_defines.h" //Access to the ID_persist struct
 
+/********************************************************************************************************************************
 //This header file holds all the functions necessary for interpolation to the ET grid, and are called by the driver function.
+********************************************************************************************************************************/
 
 /* Bisection index finder using binary search */
 static CCTK_INT TOVola_bisection_idx_finder(const CCTK_REAL rr_iso, const CCTK_INT numpoints_arr, const CCTK_REAL *restrict r_iso_arr) {
