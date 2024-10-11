@@ -1,19 +1,16 @@
-#pragma once
+#include "cctk.h"
 
-//This is the header file that contains all the information about the TOVs and integration schemes. Used in conjuction with GSL in the driver function.
+#include "gsl/gsl_odeiv2.h"
+#include "gsl/gsl_errno.h"
 
 #include "GRHayLib.h"
 #include "TOVola_defines.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <gsl/gsl_odeiv2.h>
-#include <gsl/gsl_errno.h>
 
-#include <cctk.h>
-#include <cctk_Arguments.h>
-#include <cctk_Parameters.h>
+#pragma once
+
+/*********************************************************************************************************************************************************
+//This is the header file that contains all the information about the TOVs and integration schemes. Used in conjunction with GSL in the driver function.
+*********************************************************************************************************************************************************/
 
 #define ODE_SOLVER_DIM 4
 #define TOVOLA_PRESSURE 0
@@ -22,11 +19,11 @@
 #define TOVOLA_R_ISO 3
 #define NEGATIVE_R_INTERP_BUFFER 11
 
-/* Structure to hold raw TOV data */
+/* Structure to hold raw TOV data. Only used by these functions, so is declared in solve.h */
 typedef struct {
   // EOS type
 
-  int eos_type;
+  CCTK_INT eos_type;
 
   // Current state variables
   CCTK_REAL rho_baryon;
@@ -40,9 +37,9 @@ typedef struct {
   CCTK_REAL *restrict M_arr;
   CCTK_REAL *restrict nu_arr;
   CCTK_REAL *restrict Iso_r_arr;
-  int numels_alloced_TOV_arr;
+  CCTK_INT numels_alloced_TOV_arr;
   ghl_eos_parameters *restrict ghl_eos;
-  int numpoints_actually_saved;
+  CCTK_INT numpoints_actually_saved;
   
   //Additional declarations, to pass through ETK parameters in parfile without causing namespace pollution.
   CCTK_REAL central_baryon_density;
@@ -62,7 +59,7 @@ static void TOVola_exception_handler(CCTK_REAL r, CCTK_REAL y[]) {
 }
 
 /* Termination condition for the integration */
-static int TOVola_do_we_terminate(CCTK_REAL r, CCTK_REAL y[], TOVola_data_struct *TOVdata) {
+static CCTK_INT TOVola_do_we_terminate(CCTK_REAL r, CCTK_REAL y[], TOVola_data_struct *TOVdata) {
   
   if (TOVdata->eos_type == 2) {
   	const CCTK_REAL PMin = exp(TOVdata->ghl_eos->lp_of_lr[0]); //PMin is not zero on the table, so we don't want to exceed table limits
@@ -127,7 +124,7 @@ static void TOVola_evaluate_rho_and_eps(CCTK_REAL r, const CCTK_REAL y[], TOVola
 }
 
 /* The main ODE function for GSL */
-static int TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw[], void *params) {
+static CCTK_INT TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw[], void *params) {
   // Cast params to TOVdata_struct
   TOVola_data_struct *TOVdata = (TOVola_data_struct *)params;
 
@@ -171,7 +168,7 @@ static int TOVola_ODE(CCTK_REAL r_Schw, const CCTK_REAL y[], CCTK_REAL dydr_Schw
 }
 
 /* Placeholder Jacobian function required by GSL */
-static int TOVola_jacobian_placeholder(CCTK_REAL t, const CCTK_REAL y[], CCTK_REAL *restrict dfdy, CCTK_REAL dfdt[], void *params) {
+static CCTK_INT TOVola_jacobian_placeholder(CCTK_REAL t, const CCTK_REAL y[], CCTK_REAL *restrict dfdy, CCTK_REAL dfdt[], void *params) {
   // Jacobian is not necessary for the TOV solution, but GSL requires some
   // function. Leave it empty as it does not affect the final results
   return GSL_SUCCESS;
@@ -248,7 +245,7 @@ static void TOVola_assign_constants(CCTK_REAL c[], TOVola_data_struct *TOVdata) 
 }
 
 /* Function to set up the GSL ODE system and driver */
-static int setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, gsl_odeiv2_driver **driver, TOVola_data_struct *TOVdata) {
+static CCTK_INT setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, gsl_odeiv2_driver **driver, TOVola_data_struct *TOVdata) {
   
 
   system->function = TOVola_ODE;
@@ -280,7 +277,7 @@ static int setup_ode_system(const char *ode_method, gsl_odeiv2_system *system, g
 }
 
 /* Initialize TOVola_data_struct structure with initial allocation */
-static int initialize_tovola_data(TOVola_data_struct *TOVdata) {
+static CCTK_INT initialize_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->rSchw_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
   TOVdata->rho_energy_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
   TOVdata->rho_baryon_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numels_alloced_TOV_arr);
@@ -308,6 +305,27 @@ static void free_tovola_data(TOVola_data_struct *TOVdata) {
   TOVdata->numels_alloced_TOV_arr = 0;
 }
 
+/* Initialize TOVola_ID_persist_struct with initial allocation */
+static CCTK_INT initialize_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist, TOVola_data_struct *TOVdata) {
+  TOVola_ID_persist->r_Schw_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->rho_energy_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->rho_baryon_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->P_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->M_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->expnu_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->exp4phi_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+  TOVola_ID_persist->r_iso_arr = (CCTK_REAL *restrict)malloc(sizeof(CCTK_REAL) * TOVdata->numpoints_actually_saved);
+
+  if (!TOVola_ID_persist->r_Schw_arr || !TOVola_ID_persist->rho_energy_arr || !TOVola_ID_persist->rho_baryon_arr || !TOVola_ID_persist->P_arr || !TOVola_ID_persist->M_arr ||
+      !TOVola_ID_persist->expnu_arr || !TOVola_ID_persist->exp4phi_arr || !TOVola_ID_persist->r_iso_arr) {
+    free_tovola_data(TOVdata);
+    CCTK_ERROR("Memory allocation failed for TOVola_ID_persist_struct arrays.\n");
+    return -1;
+  }
+  return 0;
+}
+
+/* Free TOVola_ID_persist_struct */
 static void free_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist) {
   CCTK_INFO("Cleanup! Freeing Memory...");
   free(TOVola_ID_persist->r_Schw_arr);
@@ -336,7 +354,7 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
   }
 
   /* Copy raw data to normalized arrays */
-  for (int i = 0; i < TOVdata->numpoints_actually_saved; i++) {
+  for (CCTK_INT i = 0; i < TOVdata->numpoints_actually_saved; i++) {
     r_Schw[i] = TOVdata->rSchw_arr[i];
     rho_energy[i] = TOVdata->rho_energy_arr[i];
     rho_baryon[i] = TOVdata->rho_baryon_arr[i];
@@ -355,7 +373,7 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
   const CCTK_REAL normalize = 0.5 * (sqrt(R_Schw_surface * (R_Schw_surface - 2.0 * M_surface)) + R_Schw_surface - M_surface) / r_iso_surface;
 
   /* Normalize r_iso and calculate expnu and exp4phi */
-  for (int i = 0; i < TOVdata->numpoints_actually_saved; i++) {
+  for (CCTK_INT i = 0; i < TOVdata->numpoints_actually_saved; i++) {
     r_iso[i] *= normalize;
     expnu[i] = exp(expnu[i] - nu_surface + log(1.0 - 2.0 * M_surface / R_Schw_surface));
     exp4phi[i] = (r_Schw[i] / r_iso[i]) * (r_Schw[i] / r_iso[i]);
@@ -364,16 +382,8 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
 }
 
 /* Extend data to r<0, to ensure we can interpolate to r=0 */
-void extend_to_negative_r(CCTK_REAL *restrict arr, const CCTK_REAL parity, CCTK_REAL *restrict tmp, const TOVola_data_struct *restrict TOVdata) {
-  for(int i=0;i<NEGATIVE_R_INTERP_BUFFER; i++) tmp[i] = parity * arr[NEGATIVE_R_INTERP_BUFFER - i - 1];
-  for(int i=0;i<TOVdata->numpoints_actually_saved; i++) tmp[i+NEGATIVE_R_INTERP_BUFFER] = arr[i];
+static void extend_to_negative_r(CCTK_REAL *restrict arr, const CCTK_REAL parity, CCTK_REAL *restrict tmp, const TOVola_data_struct *restrict TOVdata) {
+  for(CCTK_INT i=0;i<NEGATIVE_R_INTERP_BUFFER; i++) tmp[i] = parity * arr[NEGATIVE_R_INTERP_BUFFER - i - 1];
+  for(CCTK_INT i=0;i<TOVdata->numpoints_actually_saved; i++) tmp[i+NEGATIVE_R_INTERP_BUFFER] = arr[i];
   memcpy(arr, tmp, sizeof(CCTK_REAL) * (TOVdata->numpoints_actually_saved+NEGATIVE_R_INTERP_BUFFER));
-}
-
-//For timelevel population, from original TOVsolver in the toolkit.
-void TOVola_TOV_Copy(CCTK_INT size, CCTK_REAL *var_p, CCTK_REAL *var)
-{
-#pragma omp parallel for
-    for(int i=0; i<size; i++)
-        var_p[i] = var[i];
 }

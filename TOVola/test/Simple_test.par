@@ -1,7 +1,7 @@
-############################################
-#Example parfile TOVola
-#Simple EOS
-############################################
+#######################################################
+#Test parfile TOVola
+#Test case testing the use of a Simple Polytrope Solve
+#######################################################
 
 #---------ActiveThorns---------
 
@@ -13,7 +13,7 @@ ActiveThorns = "TOVola"
 ActiveThorns = "GRHayLib GRHayLHD GRHayLID"
 ActiveThorns = "CarpetSlab CarpetReduce CarpetIOASCII CarpetIOBasic SymBase"
 
-#--For Constraint Testing
+#--For Constraint Testing (Helper thorns to actually make use of TOVola's solution)
 ActiveThorns = "Baikal"
 ActiveThorns = "Boundary CoordGauge MoL StaticConformal TmunuBase NewRad"
 
@@ -82,9 +82,9 @@ GRHayLib::evolve_temperature = yes
 GRHayLib::evolve_entropy     = no
 
 #---------Output---------
-IO::out_dir			= $parfile
-IO::out_fileinfo="none"
-#IOASCII::out1D_every     = 1
+IO::out_dir       = $parfile
+IO::out_fileinfo  = "axis labels"
+IO::parfile_write = "no"
 IOASCII::out1D_every          = 8
 IOASCII::out_precision        = 14
 IOASCII::out1D_x              = "yes"
