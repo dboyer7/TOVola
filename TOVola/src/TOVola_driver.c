@@ -45,11 +45,28 @@
 #define TOVOLA_R_ISO 3
 #define NEGATIVE_R_INTERP_BUFFER 11
 
-//Perform the TOV integration using GSL
+//Check to make sure the parameters given are valid.
+void TOVola_Parameter_Checker(CCTK_ARGUMENTS){
+
+  DECLARE_CCTK_PARAMETERS;
+  DECLARE_CCTK_ARGUMENTS_TOVola_Parameter_Checker;
+
+  CCTK_INFO("TOVola Validating its declared parameters...");
+
+  if (TOVola_Interpolation_Stencil > TOVola_Max_Interpolation_Stencil){
+	  CCTK_PARAMWARN("TOVola_Interpolation_Stencil must not exceed the Max_Interpolation_Stencil");
+  }
+  if(CCTK_EQUALS("Simple",TOVola_EOS_type) && ghl_eos->neos != 1){
+	  CCTK_PARAMWARN("Error: Too many regions for the simple polytrope. Check your value for neos, or use a piecewise polytrope.");
+  }
+  CCTK_INFO("TOVola's Parameter Validation Complete!");
+}
+
+//Drive the TOV integration using GSL and then interpolate the data to the ET grid.
 void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
 
   DECLARE_CCTK_PARAMETERS;
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TOVola_Solve_and_Interp;
   
   TOVola_ID_persist_struct TOVola_ID_persist_tmp;  // allocates memory for the pointer below.
   TOVola_ID_persist_struct *restrict TOVola_ID_persist = &TOVola_ID_persist_tmp;
@@ -61,15 +78,10 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
   gsl_odeiv2_system system;
   gsl_odeiv2_driver *driver;
 
-  //Checking and setting EOS
+  //Setting EOS
   if(CCTK_EQUALS("Simple",TOVola_EOS_type)){
     CCTK_INFO("Simple Polytrope");
-    TOVdata->eos_type = 0;
-    if(ghl_eos->neos!=1){
-      CCTK_INFO("Error: Too many regions for the simple polytrope.");
-      CCTK_INFO("Check your value for neos, or use a piecewise polytrope");
-      CCTK_ERROR("Shutting down due to error...");}       
-    }
+    TOVdata->eos_type = 0;}
   else if(CCTK_EQUALS("Piecewise",TOVola_EOS_type)){
     CCTK_INFO("Piecewise Polytrope");
     TOVdata->eos_type=1;}
@@ -78,10 +90,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     TOVdata->eos_type=2;
     ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(TOVola_Tin, ghl_eos);
   }
-  else{
-    CCTK_INFO("ERROR: Invalid EOS type. Must be either 'Simple', 'Piecewise', or 'Tabulated'");
-    CCTK_ERROR("Shutting down due to error...");}
-
+  
   //Initialize other TOVdata member variables
   TOVdata->numpoints_actually_saved = 0;
   TOVdata->error_limit = TOVola_error_limit;
@@ -124,7 +133,7 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS){
     if (status != GSL_SUCCESS) {
       CCTK_VINFO("GSL ODE solver failed with status %d.", status);
       gsl_odeiv2_driver_free(driver);
-      CCTK_ERROR("Shutting down due to error");
+      CCTK_ERROR("Shutting down due to error...");
     };
 
     /* Post-step exception handling */

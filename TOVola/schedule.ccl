@@ -1,3 +1,9 @@
+SCHEDULE TOVola_Parameter_Checker AT PARAMCHECK
+{
+  LANG: C
+  OPTIONS: GLOBAL
+} "Check if parameters for TOVola are valid."
+
 if (CCTK_Equals(initial_data, "TOVola"))
 {
 	SCHEDULE GROUP TOVola_TOV_Grid IN HydroBase_Initial
@@ -12,7 +18,29 @@ if (CCTK_Equals(initial_data, "TOVola"))
 
 	SCHEDULE TOVola_Solve_and_Interp IN TOVola_TOV_Grid
 	{
+		READS:  GRID::coordinates
+    		WRITES: ADMBASE::curv(everywhere)
+    		WRITES: ADMBASE::shift(everywhere)
+    		WRITES: ADMBASE::alp(everywhere)
+   		WRITES: ADMBASE::metric_p_p(everywhere),
+    			ADMBASE::metric_p(everywhere),
+   			ADMBASE::metric(everywhere)
+    		WRITES: HYDROBASE::rho_p_p(everywhere), 
+    			HYDROBASE::rho_p(everywhere), 
+    			HYDROBASE::rho(everywhere)
+    		WRITES:	HYDROBASE::press_p_p(everywhere),
+    			HYDROBASE::press_p(everywhere),
+    			HYDROBASE::press(everywhere)
+    		WRITES: HYDROBASE::eps_p_p(everywhere),
+    			HYDROBASE::eps_p(everywhere),
+    			HYDROBASE::eps(everywhere)
+    		WRITES: HYDROBASE::vel_p_p(everywhere),
+    			HYDROBASE::vel_p(everywhere),
+    			HYDROBASE::vel(everywhere)
+    		WRITES: HYDROBASE::w_lorentz_p_p(everywhere),
+    			HYDROBASE::w_lorentz_p(everywhere),
+    			HYDROBASE::w_lorentz(everywhere)
 		LANG: C
-	} "Performs the TOV initial data solution algorithm. Calls the integration function for the raw data, normalizes the data to make it more usable, and interpolates to the ET grid."
+	} "Performs/Drives the TOV initial data solution algorithm. Calls the integration function for the raw data, normalizes the data to make it more usable, and interpolates to the ET grid."
 
 }
