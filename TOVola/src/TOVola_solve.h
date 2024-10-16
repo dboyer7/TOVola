@@ -229,7 +229,6 @@ static void TOVola_get_initial_condition(CCTK_REAL y[], TOVola_data_struct *TOVd
     TOVdata->rho_energy = (TOVdata->rho_baryon)*(1.0+eps);
   }
 
-  CCTK_VINFO("Initial Conditions Set: P = %.6e, nu = %.6e, M = %.6e, r_iso = %.6e", y[TOVOLA_PRESSURE], y[TOVOLA_NU], y[TOVOLA_MASS], y[TOVOLA_R_ISO]);
 }
 
 /* Assign constants after each integration step */
@@ -327,7 +326,6 @@ static CCTK_INT initialize_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_p
 
 /* Free TOVola_ID_persist_struct */
 static void free_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist) {
-  CCTK_INFO("Cleanup! Freeing Memory...");
   free(TOVola_ID_persist->r_Schw_arr);
   free(TOVola_ID_persist->rho_energy_arr);
   free(TOVola_ID_persist->rho_baryon_arr);
@@ -336,7 +334,6 @@ static void free_ID_persist_data(TOVola_ID_persist_struct *TOVola_ID_persist) {
   free(TOVola_ID_persist->expnu_arr);
   free(TOVola_ID_persist->r_iso_arr);
   free(TOVola_ID_persist->exp4phi_arr);
-  CCTK_INFO("Memory Freed!");
 }
 
 
@@ -346,8 +343,6 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
                                               CCTK_REAL *restrict exp4phi, CCTK_REAL *restrict r_iso) {
   
 	
-  CCTK_INFO("TOVola Normalizing raw TOV data...");
-
   /* Check if there are enough points to normalize */
   if (TOVdata->numpoints_actually_saved < 2) {
     CCTK_ERROR("Not enough data points to normalize.");
@@ -378,7 +373,6 @@ static void TOVola_Normalize_and_set_data_integrated(TOVola_data_struct *TOVdata
     expnu[i] = exp(expnu[i] - nu_surface + log(1.0 - 2.0 * M_surface / R_Schw_surface));
     exp4phi[i] = (r_Schw[i] / r_iso[i]) * (r_Schw[i] / r_iso[i]);
   }
-  CCTK_INFO("Normalization of raw data complete!");
 }
 
 /* Extend data to r<0, to ensure we can interpolate to r=0 */
