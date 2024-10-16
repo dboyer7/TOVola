@@ -1,21 +1,29 @@
+#ifndef TOVOLA_INTERP_H
+#define TOVOLA_INTERP_H
+
 #include "cctk.h"
 
-#include "GRHayLib.h" //Access to GRHayL library in the ET
+#include "GRHayLib.h"       //Access to GRHayL library in the ET
 #include "TOVola_defines.h" //Access to the ID_persist struct
 
 /********************************************************************************************************************************
-//This header file holds all the functions necessary for interpolation to the ET grid, and are called by the driver function.
+//This header file holds all the functions necessary for interpolation to the ET
+grid, and are called by the driver function.
 ********************************************************************************************************************************/
 
 /* Bisection index finder using binary search */
-static CCTK_INT TOVola_bisection_idx_finder(const CCTK_REAL rr_iso, const CCTK_INT numpoints_arr, const CCTK_REAL *restrict r_iso_arr) {
+static CCTK_INT
+TOVola_bisection_idx_finder(const CCTK_REAL rr_iso,
+                            const CCTK_INT numpoints_arr,
+                            const CCTK_REAL *restrict r_iso_arr) {
   CCTK_INT x1 = 0;
   CCTK_INT x2 = numpoints_arr - 1;
   CCTK_REAL y1 = rr_iso - r_iso_arr[x1];
   CCTK_REAL y2 = rr_iso - r_iso_arr[x2];
   if (y1 * y2 > 0) {
-    CCTK_VINFO("INTERPOLATION BRACKETING ERROR: r_iso_min = %e ?<= r_iso = %.15e ?<= %e = r_iso_max", r_iso_arr[0], rr_iso,
-            r_iso_arr[numpoints_arr - 1]);
+    CCTK_VINFO("INTERPOLATION BRACKETING ERROR: r_iso_min = %e ?<= r_iso = "
+               "%.15e ?<= %e = r_iso_max",
+               r_iso_arr[0], rr_iso, r_iso_arr[numpoints_arr - 1]);
     CCTK_ERROR("Shutting down due to error...");
   }
   for (CCTK_INT i = 0; i < numpoints_arr; i++) {
@@ -37,31 +45,38 @@ static CCTK_INT TOVola_bisection_idx_finder(const CCTK_REAL rr_iso, const CCTK_I
       return x2;
     }
   }
-  CCTK_VINFO("INTERPOLATION BRACKETING ERROR: r_iso_min = %e ?<= r_iso = %.15e ?<= %e = r_iso_max", r_iso_arr[0], rr_iso,
-            r_iso_arr[numpoints_arr - 1]);
+  CCTK_VINFO("INTERPOLATION BRACKETING ERROR: r_iso_min = %e ?<= r_iso = %.15e "
+             "?<= %e = r_iso_max",
+             r_iso_arr[0], rr_iso, r_iso_arr[numpoints_arr - 1]);
   CCTK_ERROR("Shutting down due to error...");
 }
 
 /* Interpolation Function using Lagrange Polynomial */
-static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
-                                      const CCTK_INT Interpolation_Stencil, const CCTK_INT Max_Interpolation_Stencil, const CCTK_INT numpoints_arr, const CCTK_REAL *restrict r_Schw_arr,
-                                      const CCTK_REAL *restrict rho_energy_arr, const CCTK_REAL *restrict rho_baryon_arr, const CCTK_REAL *restrict P_arr,
-                                      const CCTK_REAL *restrict M_arr, const CCTK_REAL *restrict expnu_arr, const CCTK_REAL *restrict exp4phi_arr,
-                                      const CCTK_REAL *restrict r_iso_arr, CCTK_REAL *restrict rho_energy, CCTK_REAL *restrict rho_baryon, CCTK_REAL *restrict P,
-                                      CCTK_REAL *restrict M, CCTK_REAL *restrict expnu, CCTK_REAL *restrict exp4phi) {
-  
-	
+static void TOVola_TOV_interpolate_1D(
+    CCTK_REAL rr_iso, const CCTK_INT Interpolation_Stencil,
+    const CCTK_INT Max_Interpolation_Stencil, const CCTK_INT numpoints_arr,
+    const CCTK_REAL *restrict r_Schw_arr,
+    const CCTK_REAL *restrict rho_energy_arr,
+    const CCTK_REAL *restrict rho_baryon_arr, const CCTK_REAL *restrict P_arr,
+    const CCTK_REAL *restrict M_arr, const CCTK_REAL *restrict expnu_arr,
+    const CCTK_REAL *restrict exp4phi_arr, const CCTK_REAL *restrict r_iso_arr,
+    CCTK_REAL *restrict rho_energy, CCTK_REAL *restrict rho_baryon,
+    CCTK_REAL *restrict P, CCTK_REAL *restrict M, CCTK_REAL *restrict expnu,
+    CCTK_REAL *restrict exp4phi) {
+
   const CCTK_INT R_idx = numpoints_arr - 1;
   const CCTK_REAL M_star = M_arr[R_idx];
   const CCTK_REAL r_iso_max_inside_star = r_iso_arr[R_idx];
   CCTK_REAL r_Schw = 0.0;
-  if (rr_iso < r_iso_max_inside_star) { // If we are INSIDE the star, we need to interpollate the data to the grid.
+  if (rr_iso < r_iso_max_inside_star) { // If we are INSIDE the star, we need to
+                                        // interpollate the data to the grid.
     // For this case, we know that for all functions, f(r) = f(-r)
     if (rr_iso < 0)
       rr_iso = -rr_iso;
 
     // First find the central interpolation stencil index:
-    CCTK_INT idx_mid = TOVola_bisection_idx_finder(rr_iso, numpoints_arr, r_iso_arr);
+    CCTK_INT idx_mid =
+        TOVola_bisection_idx_finder(rr_iso, numpoints_arr, r_iso_arr);
 
     /* Use standard library functions instead of redefining macros */
     CCTK_INT idxmin = MAX(0, idx_mid - Interpolation_Stencil / 2 - 1);
@@ -116,7 +131,9 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
 
   } else {
     // If we are OUTSIDE the star, the solution is just Schwarzschild.
-    r_Schw = (rr_iso + M_star) + M_star * M_star / (4.0 * rr_iso); // Need to know what r_Schw is at our current grid location.
+    r_Schw = (rr_iso + M_star) +
+             M_star * M_star / (4.0 * rr_iso); // Need to know what r_Schw is at
+                                               // our current grid location.
     *rho_energy = 0;
     *rho_baryon = 0;
     *P = 0;
@@ -125,3 +142,5 @@ static void TOVola_TOV_interpolate_1D(CCTK_REAL rr_iso,
     *exp4phi = (r_Schw * r_Schw) / (rr_iso * rr_iso);
   }
 }
+
+#endif
