@@ -1,7 +1,7 @@
-#######################################################
-#Test parfile TOVola
-#Test case testing the use of a Piecewise Polytrope Solve
-#######################################################
+############################################
+#Example parfile TOVola
+#Piecewise EOS
+############################################
 
 #---------ActiveThorns---------
 
@@ -13,7 +13,7 @@ ActiveThorns = "TOVola"
 ActiveThorns = "GRHayLib GRHayLHD GRHayLID"
 ActiveThorns = "CarpetSlab CarpetReduce CarpetIOASCII CarpetIOBasic SymBase"
 
-#--For Constraint Testing (Helper thorns to actually make use of TOVola's solution)
+#--For Constraint Testing
 ActiveThorns = "Baikal"
 ActiveThorns = "Boundary CoordGauge MoL StaticConformal TmunuBase NewRad"
 
@@ -31,7 +31,8 @@ TOVola::TOVola_central_baryon_density = 1.58e-3
 TOVola::TOVola_error_limit = 1.0e-8
 TOVola::TOVola_EOS_type = "Piecewise"
 
-#---------ADMBase---------
+#---------ADMBase (and HydroBase)---------
+HydroBase::initial_hydro         = "TOVola"
 ADMBase::initial_data            = "TOVola"
 ADMBase::initial_lapse           = "TOVola"
 ADMBase::initial_shift           = "TOVola"
