@@ -70,7 +70,7 @@ void TOVola_Parameter_Checker(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
   DECLARE_CCTK_ARGUMENTS_TOVola_Parameter_Checker;
 
-  CCTK_INFO("TOVola Validating its declared parameters...");
+  CCTK_INFO("TOVola Validating Interpolation stencil and EOS_type...");
 
   if (TOVola_Interpolation_Stencil > TOVola_Max_Interpolation_Stencil) {
     CCTK_PARAMWARN("TOVola_Interpolation_Stencil must not exceed the "
@@ -80,7 +80,7 @@ void TOVola_Parameter_Checker(CCTK_ARGUMENTS) {
     CCTK_PARAMWARN("Error: Too many regions for the simple polytrope. Check "
                    "your value for neos, or use a piecewise polytrope.");
   }
-  CCTK_INFO("TOVola's Parameter Validation Complete!");
+  CCTK_INFO("Validation Complete!");
 }
 
 // Drive the TOV integration using GSL and then interpolate the data to the ET
@@ -393,21 +393,21 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS) {
           CCTK_VECTGFINDEX3D(cctkGH, i, j, k, 2); // index for velocity_z
       // Copy Over
       if (CCTK_EQUALS(initial_hydro, "TOVola")) {
-        rho_p_p[i3d] = rho[i3d];
-        press_p_p[i3d] = press[i3d];
-        eps_p_p[i3d] = eps[i3d];
-        w_lorentz_p_p[i3d] = w_lorentz[i3d];
-        vel_p_p[i3d_vx] = vel[i3d_vx];
-        vel_p_p[i3d_vy] = vel[i3d_vy];
-        vel_p_p[i3d_vz] = vel[i3d_vz];
+        rho_p[i3d] = rho[i3d];
+        press_p[i3d] = press[i3d];
+        eps_p[i3d] = eps[i3d];
+        w_lorentz_p[i3d] = w_lorentz[i3d];
+        vel_p[i3d_vx] = vel[i3d_vx];
+        vel_p[i3d_vy] = vel[i3d_vy];
+        vel_p[i3d_vz] = vel[i3d_vz];
       }
       if (CCTK_EQUALS(initial_data, "TOVola")) {
-        gxx_p_p[i3d] = gxx[i3d];
-        gyy_p_p[i3d] = gyy[i3d];
-        gzz_p_p[i3d] = gzz[i3d];
-        gxy_p_p[i3d] = gxy[i3d];
-        gxz_p_p[i3d] = gxz[i3d];
-        gyz_p_p[i3d] = gyz[i3d];
+        gxx_p[i3d] = gxx[i3d];
+        gyy_p[i3d] = gyy[i3d];
+        gzz_p[i3d] = gzz[i3d];
+        gxy_p[i3d] = gxy[i3d];
+        gxz_p[i3d] = gxz[i3d];
+        gyz_p[i3d] = gyz[i3d];
       }
     }
     CCTK_ENDLOOP3_ALL(TOVola_Pop1);

@@ -2,7 +2,7 @@ SCHEDULE TOVola_Parameter_Checker AT PARAMCHECK
 {
   LANG: C
   OPTIONS: GLOBAL
-} "Check if parameters for TOVola are valid."
+} "Check if Interpollation Stencil does not exceed Maximum value, and EOS type is used appropriately."
 
 if (CCTK_Equals(initial_data, "TOVola"))
 {

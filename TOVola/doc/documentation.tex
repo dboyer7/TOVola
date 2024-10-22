@@ -156,7 +156,9 @@ The ODE solver that \texttt{TOVola} uses is the \texttt{GSL} ODE solver. It can 
 
 The integration starts by calculating the initial pressure of the system from a given central baryon density, $\rho_c$. Then, using \texttt{GSL}, it steps through the integration. The integration will continue until the termination condition is hit, which was chosen to be the surface of the star. It saves the solution for each step, reallocating memory for the stored solution if the solution gets sufficiently large.
 
-Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated for further use in the toolkit. \texttt{TOVola} then uses an interpolator generated from the \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} library to interpolate the adjusted data to the ET grid. \texttt{TOVola} uses \texttt{HydroBase} and \texttt{ADMBase} for TOV quantities, and uses \texttt{Baikal} to calculate the constraint violations in the example parfiles. $T^{\mu\nu}$ is calculated using \texttt{GRHayLHD} and stored in \texttt{TmunuBase}.
+Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated for further use in the toolkit. \texttt{TOVola} then uses an interpolator heavily inspired from the \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} library to interpolate the adjusted data to the ET grid. From there, the grid functions are saved and, if needed, time levels are populated by copying the data over (as the TOVs are static).
+
+The example parfiles give an example of what you can do with that data from there. In the example parfiles, the initial data is stored with \texttt{Hydrobase} and \texttt{ADMbase}, and the \texttt{Baikal} thorn calculates the constraint violation of the initial data. Gallery examples are also currently in the works that use the thorn \texttt{GRHydro} to evolve the initial data that was calculated by \texttt{TOVola}. In \cite{TOVola_TOVola_GRHayL}, initial data from \texttt{TOVola} is being used for the evolutions of TOV data. Once TOVola creates the initial data, it is up to the user to then decide what they want to use that initial data for.
 
 \section{Using TOVola}
 
@@ -193,11 +195,11 @@ Example parfiles can be found in the thorn's \texttt{par} directory. There is on
 
 \texttt{Baikal} was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so these example parfiles still include constraint violation calculations.
 
-Gallery examples are also being created and will be included in the example parfiles once they are acceptable.
+Gallery examples are also being created that evolve the initial data with \texttt{GRHydro} and will be included in the example parfiles once they are acceptable.
 
 \section{Acknowledgements}
 
-I acknowledge the use of \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} to generate a base interpolator to put the TOV data on the grid. I acknowledge the use of the \texttt{GRHayL} thorn, which was used to store and use EOS specific data in the solution to the TOVs.
+I acknowledge the use of \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} to generate a base interpolator to put the TOV data on the grid, of which I edited from there. I acknowledge the use of the \texttt{GRHayL} thorn, which was used to store and use EOS specific data in the solution to the TOVs.
 
 \begin{thebibliography}{9}
 \bibitem{TOVola_TOVola_Baikal}
