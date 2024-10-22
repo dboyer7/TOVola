@@ -97,7 +97,7 @@ GRHayLib::evolve_entropy     = no
 
 #---------Output---------
 IO::out_dir			= $parfile
-IO::out_fileinfo="none"
+#IO::out_fileinfo="none"
 #IOASCII::out1D_every     = 1
 IOASCII::out1D_every          = 8
 IOASCII::out_precision        = 14
