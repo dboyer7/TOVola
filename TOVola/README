@@ -30,13 +30,7 @@ All these choices can be made in the parfile. No touching the src code is
 necessary (as it should be). For examples of using each EOS type, see the par directory.
 
 ==========
-3. Output
-==========
-
-You can output via ascii data from the toolkit. See the example parfiles for more details.
-
-==========
-4. Testing
+3. Testing
 ==========
 
 This code has been tested against both the NRpy generated TOV solver and 
