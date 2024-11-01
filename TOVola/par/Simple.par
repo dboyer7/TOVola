@@ -93,5 +93,5 @@ IOASCII::out1D_y              = "no"
 IOASCII::out1D_z              = "no"
 IOASCII::out1D_d              = "no"
 IOASCII::out1D_vars      = "HydroBase::w_lorentz hydrobase::rho hydrobase::press hydrobase::eps HydroBase::vel admbase::lapse admbase::metric admbase::curv Baikal::aux_variables Tmunubase::stress_energy_scalar Tmunubase::stress_energy_vector Tmunubase::stress_energy_tensor"
-CarpetIOASCII::compact_format = yes
+CarpetIOASCII::compact_format = no
 CarpetIOASCII::output_ghost_points = no
