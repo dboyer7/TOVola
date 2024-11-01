@@ -27,7 +27,8 @@ RK4(5) and DP7(8). GSL allows for more methods, both adaptive and non-adaptive,
 but the two I listed felt sufficient enough.
 
 All these choices can be made in the parfile. No touching the src code is
-necessary (as it should be). For examples of using each EOS type, see the par directory.
+necessary (as it should be). For examples of using each EOS type, see the par directory,
+or the "Compatible Equations of State" section in the documentation.
 
 ==========
 3. Testing

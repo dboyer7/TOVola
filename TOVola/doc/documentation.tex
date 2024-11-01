@@ -174,6 +174,47 @@ As mentioned earlier, \texttt{TOVola} has 3 types of EOS that are compatible: Si
 
 As \texttt{GRHayL}\cite{TOVola_TOVola_GRHayL} holds the information on the EOS, you must set its parameters in the parfile as well. Depending on the EOS you are using, you will set different parameters ($K$ and $Gamma$ for polytropes, or a beta\_equilibrium\_temperature for Tabulated). For more details, please refer to the example parfiles in the \texttt{par} directory. They act as templates of how your parfile should look.
 
+\subsubsection{Using a Simple Polytrope}
+
+Aside from telling both \texttt{TOVola} and \texttt{GRHayLib} which EOS type you are using, \texttt{GRHayLib} also needs to know the polytropic parameters:
+
+\begin{itemize}
+    \item \texttt{GRHayLib::Gamma\_th}
+    \item \texttt{GRHayLib::Gamma\_ppoly\_in[0]}
+    \teun \texttt{GRHayLib::k\_ppoly0}
+\end{itemize}
+
+\subsubsection{Using a Piecewise Polytrope}
+
+Piecewise Polytrope is practically identical in setting up as the simple polytrope, however, you need to tell \texttt{GRHayLib} the polytropic parameters of each region, as well as how many regions you are using:
+
+\begin{itemize}
+    \item \texttt{GRHayLib::neos}
+    \item \texttt{GRHayLib::Gamma\_th}
+    \item \texttt{GRHayLib::Gamma\_ppoly\_in[i]} for each region
+    \item \texttt{GRHayLib::rho\_ppoly\_in[i]} for each region boundary
+    \teun \texttt{GRHayLib::k\_ppoly0}
+\end{itemize}
+
+\subsubsection{Using a Tabulated EOS}
+
+Setting up a Tabulated EOS is going to be rather different than the last two EOS types. \texttt{GRHayLib} needs to know a completely different set of variables than the polytropes. Instead of the polytropic parameters, you need to give \texttt{GRHayLib} information that will help it slice the table you are using. Furthermore, you will need to activate the \texttt{GRHayLID} thorn to impose a beta equilibrium temperature. This will allow for proper table slicing:
+
+\begin{itemize}
+    \item \texttt{TOVola::TOVola\_Tin}, beta equilibrium temperature, to take the table slice we want
+    \item \texttt{GRHayLib::EOS\_tablepath}, where you table is located.
+    \item \texttt{GRHayLib::Y\_e\_atm}
+    \item \texttt{GRHayLib::Y\_e\_min}
+    \item \texttt{GRHayLib::Y\_e\_max}
+    \item \texttt{GRHayLib::T\_atm}
+    \item \texttt{GRHayLib::T\_min}
+    \item \texttt{GRHayLib::T\_max}
+    \item \texttt{GRHayLID::impose\_beta\_equilibrium = yes}
+    \item \texttt{GRHayLID::beq\_temperature}
+\end{itemize}
+
+Please note: \texttt{TOVola} does NOT provide the EOS table. You must provide your own table to be able to use the Tabulated feature. HDF5 EOS tables are readily available at "stellarcollapse.org".
+
 \subsection{Examples}
 
 Example parfiles can be found in the thorn's \texttt{par} directory. There is one for each type of EOS:
@@ -189,7 +230,7 @@ Example parfiles can be found in the thorn's \texttt{par} directory. There is on
     \end{itemize}
     \item \texttt{Tabulated.par }
     \begin{itemize}
-	    \item An Example of using a Tabulated EOS. One must replace the \texttt{GRHayLib::EOS\_tablepath } in the parfile to the location of you EOS table. We used an adjusted SLy4 table for this specific example.
+	    \item An Example of using a Tabulated EOS. One must replace the \texttt{GRHayLib::EOS\_tablepath } in the parfile to the location of you EOS table. We used an SLy4 table for this specific example.
     \end{itemize}
 \end{itemize}
 
