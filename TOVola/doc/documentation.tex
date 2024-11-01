@@ -181,7 +181,7 @@ Aside from telling both \texttt{TOVola} and \texttt{GRHayLib} which EOS type you
 \begin{itemize}
     \item \texttt{GRHayLib::Gamma\_th}
     \item \texttt{GRHayLib::Gamma\_ppoly\_in[0]}
-    \teun \texttt{GRHayLib::k\_ppoly0}
+    \item \texttt{GRHayLib::k\_ppoly0}
 \end{itemize}
 
 \subsubsection{Using a Piecewise Polytrope}
@@ -193,7 +193,7 @@ Piecewise Polytrope is practically identical in setting up as the simple polytro
     \item \texttt{GRHayLib::Gamma\_th}
     \item \texttt{GRHayLib::Gamma\_ppoly\_in[i]} for each region
     \item \texttt{GRHayLib::rho\_ppoly\_in[i]} for each region boundary
-    \teun \texttt{GRHayLib::k\_ppoly0}
+    \item \texttt{GRHayLib::k\_ppoly0}
 \end{itemize}
 
 \subsubsection{Using a Tabulated EOS}
@@ -202,7 +202,7 @@ Setting up a Tabulated EOS is going to be rather different than the last two EOS
 
 \begin{itemize}
     \item \texttt{TOVola::TOVola\_Tin}, beta equilibrium temperature, to take the table slice we want
-    \item \texttt{GRHayLib::EOS\_tablepath}, where you table is located.
+    \item \texttt{GRHayLib::EOS\_tablepath}, where your table is located.
     \item \texttt{GRHayLib::Y\_e\_atm}
     \item \texttt{GRHayLib::Y\_e\_min}
     \item \texttt{GRHayLib::Y\_e\_max}
