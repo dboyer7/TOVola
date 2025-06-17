@@ -73,12 +73,11 @@ void TOVola_Parameter_Checker(CCTK_ARGUMENTS) {
   CCTK_INFO("TOVola Validating Interpolation stencil and EOS_type...");
 
   if (TOVola_Interpolation_Stencil > TOVola_Max_Interpolation_Stencil) {
-    CCTK_PARAMWARN("TOVola_Interpolation_Stencil must not exceed the "
+    CCTK_ParamWarn("TOVola_Interpolation_Stencil must not exceed the "
                    "Max_Interpolation_Stencil");
   }
-  if (CCTK_EQUALS("Simple", TOVola_EOS_type) && ghl_eos->neos != 1) {
-    CCTK_PARAMWARN("Error: Too many regions for the simple polytrope. Check "
-                   "your value for neos, or use a piecewise polytrope.");
+  if (ghl_eos->eos_type == ghl_eos_simple) {
+    CCTK_ParamWarn("TOVola does not support GRHayL's Simple EOS.");
   }
   CCTK_INFO("Validation Complete!");
 }
@@ -102,13 +101,12 @@ void TOVola_Solve_and_Interp(CCTK_ARGUMENTS) {
   gsl_odeiv2_driver *driver;
 
   // Setting EOS
-  if (CCTK_EQUALS("Simple", TOVola_EOS_type)) {
-    TOVdata->eos_type = 0;
-  } else if (CCTK_EQUALS("Piecewise", TOVola_EOS_type)) {
-    TOVdata->eos_type = 1;
-  } else if (CCTK_EQUALS("Tabulated", TOVola_EOS_type)) {
+  if (ghl_eos->eos_type == ghl_eos_tabulated) {
     TOVdata->eos_type = 2;
     ghl_tabulated_compute_Ye_P_eps_of_rho_beq_constant_T(TOVola_Tin, ghl_eos);
+  } else {
+    // 0 if neos = 1, else 1.
+    TOVdata->eos_type = (ghl_eos->neos != 1);
   }
 
   // Initialize other TOVdata member variables
