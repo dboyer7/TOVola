@@ -73,11 +73,11 @@ void TOVola_Parameter_Checker(CCTK_ARGUMENTS) {
   CCTK_INFO("TOVola Validating Interpolation stencil and EOS_type...");
 
   if (TOVola_Interpolation_Stencil > TOVola_Max_Interpolation_Stencil) {
-    CCTK_ERROR("TOVola_Interpolation_Stencil must not exceed the "
-               "Max_Interpolation_Stencil");
+    CCTK_ParamWarn("TOVola_Interpolation_Stencil must not exceed the "
+                   "Max_Interpolation_Stencil");
   }
   if (ghl_eos->eos_type == ghl_eos_simple) {
-    CCTK_ERROR("Error: TOVola does not support GRHayL's Simple EOS.");
+    CCTK_ParamWarn("TOVola does not support GRHayL's Simple EOS.");
   }
   CCTK_INFO("Validation Complete!");
 }
