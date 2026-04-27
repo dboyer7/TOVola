@@ -54,3 +54,7 @@ Constraint violation tested with Baikal
 ===================
 
 I acknowledge the use of LLMs for final code cleanup and organization. The code itself was still human-written.
+
+This repository is kept for posterity purposes, and is no longer maintained at this location. 
+The MAINTAINED version will be moved to the einsteininitialdata thorn, which can be found here: 
+https://bitbucket.org/einsteintoolkit/einsteininitialdata/src/master/.
