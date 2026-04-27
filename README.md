@@ -1,0 +1,60 @@
+Cactus Code Thorn TOVola
+Author(s)     : David Boyer
+Note          : This code uses GSL as the heart ODE solver 
+		and uses GRHayLib thorn to store EOS data.
+Maintainer(s) : David Boyer
+License       : BSD-2
+--------------------------------------------------------------------------
+
+==========
+1. Purpose
+==========
+
+TOVola is an Einstein Toolkit thorn that solves the TOV equations, or the equations 
+of hydrostatic equilibrium for spherically symmetric static stars, specifically 
+Neutron stars. It was designed for straightforward use and allow for multiple
+types of EOS.
+
+==========
+2. Support
+==========
+
+TOVola supports three types of EOS: Simple Polytrope, Piecewise Polytrope, 
+and Tabulated EOS.
+
+At this time, TOVola only allows two adaptive ODE methods from GSL: 
+RK4(5) and DP7(8). GSL allows for more methods, both adaptive and non-adaptive, 
+but the two I listed felt sufficient enough.
+
+All these choices can be made in the parfile. No touching the src code is
+necessary (as it should be). For examples of using each EOS type, see the par directory,
+or the "Compatible Equations of State" section in the documentation.
+
+==========
+3. Testing
+==========
+
+This code has been tested against both the NRpy generated TOV solver and 
+constraint tested using Baikal.
+
+Simple Polytrope: 
+Raw data sits within 10^-12/-13 in relative error with NRpy
+Constraint violation tested with Baikal
+
+Piecewise Polytrope:
+Raw data sits within 10^-12/-13 in relative error with NRpy
+Constraint violation tested with Baikal
+
+Tabulated EOS:
+Raw data sits within 10^-8 in relative error with NRpy (Mostly from EOS table interpolation)
+Constraint violation tested with Baikal
+
+===================
+4. Acknowledgements
+===================
+
+I acknowledge the use of LLMs for final code cleanup and organization. The code itself was still human-written.
+
+This repository is kept for posterity purposes, and is no longer maintained at this location. 
+The MAINTAINED version will be moved to the einsteininitialdata thorn, which can be found here: 
+https://bitbucket.org/einsteintoolkit/einsteininitialdata/src/master/.
