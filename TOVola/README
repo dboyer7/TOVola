@@ -48,3 +48,9 @@ Constraint violation tested with Baikal
 Tabulated EOS:
 Raw data sits within 10^-8 in relative error with NRpy (Mostly from EOS table interpolation)
 Constraint violation tested with Baikal
+
+===================
+4. Acknowledgements
+===================
+
+I acknowledge the use of LLMs for final code cleanup and organization. The code itself was still human-written.
