@@ -79,12 +79,12 @@ static void TOVola_TOV_interpolate_1D(
         TOVola_bisection_idx_finder(rr_iso, numpoints_arr, r_iso_arr);
 
     /* Use standard library functions instead of redefining macros */
-    CCTK_INT idxmin = MAX(0, idx_mid - Interpolation_Stencil / 2 - 1);
+    CCTK_INT idxmin = ghl_imax(0, idx_mid - Interpolation_Stencil / 2 - 1);
 
     // -= Do not allow the interpolation stencil to cross the star's surface =-
     // max index is when idxmin + (TOVola_Interpolation_stencil-1) = R_idx
     //  -> idxmin at most can be R_idx - TOVola_Interpolation_stencil + 1
-    idxmin = MIN(idxmin, R_idx - Interpolation_Stencil + 1);
+    idxmin = ghl_imin(idxmin, R_idx - Interpolation_Stencil + 1);
 
     // Ensure that Interpolation_Stencil does not exceed the maximum
     if (Interpolation_Stencil > Max_Interpolation_Stencil) {
